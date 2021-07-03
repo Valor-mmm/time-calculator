@@ -1,6 +1,7 @@
 import Head from 'next/head'
+import { FC } from 'react'
 
-export default function Home() {
+const Home: FC = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
       <Head>
@@ -80,3 +81,5 @@ export default function Home() {
     </div>
   )
 }
+
+export default Home
