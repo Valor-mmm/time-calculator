@@ -9,7 +9,7 @@
     "prepare": "husky install",
     "format": "prettier --write ./",
     "lint:format": "prettier --check ./",
-    "lint:es": "eslint ./",
+    "lint:es": "next lint",
     "lint:ts": "tsc",
     "lint": "npm run lint:format && npm run lint:es && npm run lint:ts"
   },
@@ -17,6 +17,7 @@
     "**/*": "prettier --write --ignore-unknown"
   },
   "dependencies": {
+    "dayjs": "^1.10.5",
     "next": "latest",
     "react": "^17.0.2",
     "react-dom": "^17.0.2"
@@ -27,6 +28,7 @@
     "@typescript-eslint/parser": "^4.28.1",
     "autoprefixer": "^10.2.6",
     "eslint": "^7.30.0",
+    "eslint-config-next": "^11.0.1",
     "eslint-config-prettier": "^8.3.0",
     "eslint-import-resolver-typescript": "^2.4.0",
     "eslint-plugin-prettier": "^3.4.0",
