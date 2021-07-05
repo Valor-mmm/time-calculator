@@ -13,7 +13,7 @@ export const TimeDiffRow: FC<TimeDiffRowProps> = ({
     <tr>
       <td className="p-1">
         <span className="bg-cyan-200 font-mono rounded-lg p-1 text-center">
-          {`${from.hour()}.${from.minute()} - ${to.hour()}.${to.minute()}`}
+          {`${from.format('HH.mm')} - ${to.format('HH.mm')}`}
         </span>
       </td>
       <td className="p-1">:</td>
