@@ -1,11 +1,13 @@
 import { FC } from 'react'
 import { TimeInfo } from '../../index'
 import { TimeDiffRow } from './timeDiffRow'
-import { TimeDifferenceInfo } from '../../useTimeDiffCalculator'
+import { TimeDifferenceInfoOrError } from '../../useTimeDiffCalculator'
+import { TimeDifferenceError } from '../../errors'
+import { TimeDiffErrorRow } from './timeDiffErrorRow'
 
 interface TimeDiffTableProps {
   totalTime: TimeInfo
-  timeDifferences: TimeDifferenceInfo[]
+  timeDifferences: TimeDifferenceInfoOrError[]
 }
 
 export const TimeDiffTable: FC<TimeDiffTableProps> = ({
@@ -15,9 +17,13 @@ export const TimeDiffTable: FC<TimeDiffTableProps> = ({
   return (
     <table className="border-collapse">
       <tbody>
-        {timeDifferences.map((difference, index) => (
-          <TimeDiffRow key={index} {...difference} />
-        ))}
+        {timeDifferences.map((difference, index) => {
+          if (difference instanceof TimeDifferenceError) {
+            return <TimeDiffErrorRow key={index} error={difference} />
+          }
+
+          return <TimeDiffRow key={index} {...difference} />
+        })}
       </tbody>
       <tfoot>
         <tr>

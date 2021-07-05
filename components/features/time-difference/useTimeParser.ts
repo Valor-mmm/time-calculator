@@ -1,4 +1,6 @@
 import dayjs from 'dayjs'
+import { TimeDifferenceError } from './errors'
+import { TimeParsingError } from './errors/TimeParsingError'
 
 const validationRegex =
   /(\d{1,2})[:.,](\d{1,2})[.\s]*-[.\s]*(\d{1,2})[:.,](\d{1,2})/
@@ -8,11 +10,16 @@ export interface ParsingResult {
   to: dayjs.Dayjs
 }
 
-export const useTimeParser = (timeInput: string): ParsingResult[] =>
+export const useTimeParser = (
+  timeInput: string
+): (ParsingResult | TimeDifferenceError)[] =>
   timeInput.split('\n').map((timeDiff) => {
     const result = timeDiff.trim().match(validationRegex)
     if (!result) {
-      throw Error(`Times could not be parsed. Wrong format: ${timeDiff}`)
+      return new TimeParsingError(
+        'Could not parse provided time difference.',
+        timeDiff
+      )
     }
 
     const from = dayjs()

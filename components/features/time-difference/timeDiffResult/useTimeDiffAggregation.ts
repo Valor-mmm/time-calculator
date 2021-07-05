@@ -1,11 +1,16 @@
-import { TimeDifferenceInfo } from '../useTimeDiffCalculator'
+import { TimeDifferenceInfoOrError } from '../useTimeDiffCalculator'
 import { TimeInfo } from '../index'
+import { TimeDifferenceError } from '../errors'
 
 export const useTimeDiffAggregation = (
-  timeDifferences: TimeDifferenceInfo[]
+  timeDifferences: TimeDifferenceInfoOrError[]
 ): TimeInfo =>
   timeDifferences.reduce(
     (agg, current) => {
+      if (current instanceof TimeDifferenceError) {
+        return agg
+      }
+
       const hourSum = agg.hours + current.hours
       const minuteSum = agg.minutes + current.minutes
       return {

@@ -1,10 +1,10 @@
 import { FC, useMemo } from 'react'
 import { TimeDiffTable } from './timeDiffTable'
-import { TimeDifferenceInfo } from '../useTimeDiffCalculator'
+import { TimeDifferenceInfoOrError } from '../useTimeDiffCalculator'
 import { useTimeDiffAggregation } from './useTimeDiffAggregation'
 
 interface TimeDiffResultProps {
-  result: TimeDifferenceInfo[]
+  result: TimeDifferenceInfoOrError[]
 }
 
 export const TimeDiffResult: FC<TimeDiffResultProps> = ({ result }) => {

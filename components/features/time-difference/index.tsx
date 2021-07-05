@@ -3,7 +3,7 @@ import { Textarea } from '../../lib/textarea/Textarea'
 import { TimeDiffResult } from './timeDiffResult'
 import { useTimeParser } from './useTimeParser'
 import {
-  TimeDifferenceInfo,
+  TimeDifferenceInfoOrError,
   useTimeDiffCalculator,
 } from './useTimeDiffCalculator'
 
@@ -15,9 +15,9 @@ export interface TimeInfo {
 export type TimeDifferenceProps = Record<string, never>
 
 export const TimeDifference: FC<TimeDifferenceProps> = () => {
-  const [timeDifferences, setTimeDifferences] = useState<TimeDifferenceInfo[]>(
-    []
-  )
+  const [timeDifferences, setTimeDifferences] = useState<
+    TimeDifferenceInfoOrError[]
+  >([])
 
   const handleBlur = (inputValue: string) => {
     if (!inputValue.trim()) {
