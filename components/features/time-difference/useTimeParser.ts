@@ -1,6 +1,7 @@
 import dayjs from 'dayjs'
 
-const validationRegex = /(\d{1,2})[:.,](\d{1,2}).?-.?(\d{1,2})[:.,](\d{1,2})/
+const validationRegex =
+  /(\d{1,2})[:.,](\d{1,2})[.\s]*-[.\s]*(\d{1,2})[:.,](\d{1,2})/
 
 export interface ParsingResult {
   from: dayjs.Dayjs

@@ -20,7 +20,7 @@ export const TimeDifference: FC<TimeDifferenceProps> = () => {
   )
 
   const handleBlur = (inputValue: string) => {
-    if (!inputValue) {
+    if (!inputValue.trim()) {
       setTimeDifferences([])
     }
 
