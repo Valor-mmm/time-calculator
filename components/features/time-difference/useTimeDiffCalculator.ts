@@ -11,7 +11,7 @@ export type TimeDifferenceInfoOrError =
 const MINUTES_IN_AN_HOUR = 60
 
 export const useTimeDiffCalculator = (
-  timePairs: (ParsingResult | TimeDifferenceError)[]
+  timePairs: (ParsingResult | TimeDifferenceError)[],
 ): TimeDifferenceInfoOrError[] =>
   timePairs.map((timePair) => {
     if (timePair instanceof TimeDifferenceError) {

@@ -11,14 +11,14 @@ export interface ParsingResult {
 }
 
 export const useTimeParser = (
-  timeInput: string
+  timeInput: string,
 ): (ParsingResult | TimeDifferenceError)[] =>
   timeInput.split('\n').map((timeDiff) => {
     const result = timeDiff.trim().match(validationRegex)
     if (!result) {
       return new TimeParsingError(
         'Could not parse provided time difference.',
-        timeDiff
+        timeDiff,
       )
     }
 

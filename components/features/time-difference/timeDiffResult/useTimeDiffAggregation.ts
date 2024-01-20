@@ -3,7 +3,7 @@ import { TimeInfo } from '../index'
 import { TimeDifferenceError } from '../errors'
 
 export const useTimeDiffAggregation = (
-  timeDifferences: TimeDifferenceInfoOrError[]
+  timeDifferences: TimeDifferenceInfoOrError[],
 ): TimeInfo =>
   timeDifferences.reduce(
     (agg, current) => {
@@ -21,5 +21,5 @@ export const useTimeDiffAggregation = (
     {
       minutes: 0,
       hours: 0,
-    } as TimeInfo
+    } as TimeInfo,
   )
