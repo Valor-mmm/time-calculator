@@ -11,7 +11,7 @@ export const TimeDiffResult: FC<TimeDiffResultProps> = ({ result }) => {
   const totalTime = useMemo(() => aggregateTimeDifference(result), [result])
 
   return (
-    <section className="container mx-auto bg-gray-200 border-2 border-gray-400 border-opacity-50 rounded-lg p-4 sm:flex sm:justify-center">
+    <section className="container mx-auto bg-gray-200 dark:bg-gray-700 border-2 border-gray-400 border-opacity-50 rounded-lg p-4 sm:flex sm:justify-center">
       <TimeDiffTable timeDifferences={result} totalTime={totalTime} />
     </section>
   )

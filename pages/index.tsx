@@ -10,7 +10,7 @@ const Home: FC = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className="min-h-screen bg-gray-200 py-6 sm:py-12">
+      <main className="min-h-screen bg-gray-200 dark:bg-gray-800 dark:text-white py-6 sm:py-12">
         <TimeDifference />
       </main>
     </>

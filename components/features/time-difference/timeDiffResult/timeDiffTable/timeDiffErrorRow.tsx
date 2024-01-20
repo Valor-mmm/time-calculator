@@ -19,7 +19,7 @@ export const TimeDiffErrorRow: FC<TimeDiffErrorRowProps> = ({ error }) => {
 
   return (
     <tr>
-      <td className="text-red-300" colSpan={3}>
+      <td className="text-red-300 dark:text-red-600" colSpan={3}>
         {errorMessage}
       </td>
     </tr>
