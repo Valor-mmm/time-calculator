@@ -1,7 +1,7 @@
 import { FC } from 'react'
 import { TimeInfo } from '../../index'
 import { TimeDiffRow } from './timeDiffRow'
-import { TimeDifferenceInfoOrError } from '../../useTimeDiffCalculator'
+import { TimeDifferenceInfoOrError } from '../../timeDifference'
 import { TimeDifferenceError } from '../../errors'
 import { TimeDiffErrorRow } from './timeDiffErrorRow'
 

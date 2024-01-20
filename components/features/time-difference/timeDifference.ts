@@ -1,4 +1,4 @@
-import { ParsingResult } from './useTimeParser'
+import { ParsingResult } from './parseTime'
 import { TimeInfo } from './index'
 import { TimeDifferenceError } from './errors'
 
@@ -10,7 +10,7 @@ export type TimeDifferenceInfoOrError =
 
 const MINUTES_IN_AN_HOUR = 60
 
-export const useTimeDiffCalculator = (
+export const timeDifference = (
   timePairs: (ParsingResult | TimeDifferenceError)[],
 ): TimeDifferenceInfoOrError[] =>
   timePairs.map((timePair) => {

@@ -1,8 +1,8 @@
-import { TimeDifferenceInfoOrError } from '../useTimeDiffCalculator'
+import { TimeDifferenceInfoOrError } from '../timeDifference'
 import { TimeInfo } from '../index'
 import { TimeDifferenceError } from '../errors'
 
-export const useTimeDiffAggregation = (
+export const aggregateTimeDifference = (
   timeDifferences: TimeDifferenceInfoOrError[],
 ): TimeInfo =>
   timeDifferences.reduce(

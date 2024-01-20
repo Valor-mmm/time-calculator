@@ -10,7 +10,7 @@ export interface ParsingResult {
   to: dayjs.Dayjs
 }
 
-export const useTimeParser = (
+export const parseTime = (
   timeInput: string,
 ): (ParsingResult | TimeDifferenceError)[] =>
   timeInput.split('\n').map((timeDiff) => {

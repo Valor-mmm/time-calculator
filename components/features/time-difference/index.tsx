@@ -1,11 +1,8 @@
 import { FC, useState } from 'react'
 import { Textarea } from '../../lib/textarea/Textarea'
 import { TimeDiffResult } from './timeDiffResult'
-import { useTimeParser } from './useTimeParser'
-import {
-  TimeDifferenceInfoOrError,
-  useTimeDiffCalculator,
-} from './useTimeDiffCalculator'
+import { parseTime } from './parseTime'
+import { TimeDifferenceInfoOrError, timeDifference } from './timeDifference'
 
 export interface TimeInfo {
   minutes: number
@@ -24,8 +21,8 @@ export const TimeDifference: FC<TimeDifferenceProps> = () => {
       setTimeDifferences([])
     }
 
-    const parsedTime = useTimeParser(inputValue)
-    setTimeDifferences(useTimeDiffCalculator(parsedTime))
+    const parsedTime = parseTime(inputValue)
+    setTimeDifferences(timeDifference(parsedTime))
   }
 
   return (
