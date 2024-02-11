@@ -23,7 +23,7 @@ updates:
           - 'autoprefixer'
         update-types:
           - 'major'
-      eslint_major:
+      eslint:
         patterns:
           - '*eslint*'
       minors:
