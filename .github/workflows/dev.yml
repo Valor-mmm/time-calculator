@@ -1,0 +1,4 @@
+on: [push]
+jobs:
+  lint:
+    uses: ./.github/workflows/_lint.yml
