@@ -1,14 +1,19 @@
 import { ParsingResult } from './parseTime'
-import { TimeInfo } from './index'
 import { TimeDifferenceError } from './errors'
-
-export type TimeDifferenceInfo = ParsingResult & TimeInfo
-
-export type TimeDifferenceInfoOrError =
-  | (ParsingResult & TimeInfo)
-  | TimeDifferenceError
+import dayjs from 'dayjs'
+import { TimeDifferenceInfoOrError, TimeInfo } from './types'
 
 const MINUTES_IN_AN_HOUR = 60
+
+export const calculateTimeDiff = (
+  from: dayjs.Dayjs,
+  to: dayjs.Dayjs,
+): TimeInfo => {
+  const diffInMinutes = to.diff(from, 'minute')
+  const minutes = diffInMinutes % MINUTES_IN_AN_HOUR
+
+  return { hours: (diffInMinutes - minutes) / MINUTES_IN_AN_HOUR, minutes }
+}
 
 export const timeDifference = (
   timePairs: (ParsingResult | TimeDifferenceError)[],
@@ -18,12 +23,8 @@ export const timeDifference = (
       return timePair
     }
 
-    const diffInMinutes = timePair.to.diff(timePair.from, 'minute')
-    const minutes = diffInMinutes % MINUTES_IN_AN_HOUR
-
     return {
       ...timePair,
-      hours: (diffInMinutes - minutes) / MINUTES_IN_AN_HOUR,
-      minutes,
+      ...calculateTimeDiff(timePair.from, timePair.to),
     }
   })

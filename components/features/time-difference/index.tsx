@@ -1,20 +1,15 @@
-import { FC, useState } from 'react'
+import { FC, useEffect, useState } from 'react'
 import { Textarea } from '../../lib/textarea/Textarea'
 import { TimeDiffResult } from './timeDiffResult'
 import { parseTime } from './parseTime'
-import { TimeDifferenceInfoOrError, timeDifference } from './timeDifference'
-
-export interface TimeInfo {
-  minutes: number
-  hours: number
-}
+import { timeDifference } from './timeDifference'
+import { calculatePauses } from './pauses'
+import { TimeDiffRow } from './types'
 
 export type TimeDifferenceProps = Record<string, never>
 
 export const TimeDifference: FC<TimeDifferenceProps> = () => {
-  const [timeDifferences, setTimeDifferences] = useState<
-    TimeDifferenceInfoOrError[]
-  >([])
+  const [timeDifferences, setTimeDifferences] = useState<TimeDiffRow[]>([])
 
   const handleBlur = (inputValue: string) => {
     if (!inputValue.trim()) {
@@ -22,7 +17,7 @@ export const TimeDifference: FC<TimeDifferenceProps> = () => {
     }
 
     const parsedTime = parseTime(inputValue)
-    setTimeDifferences(timeDifference(parsedTime))
+    setTimeDifferences(calculatePauses(timeDifference(parsedTime)))
   }
 
   return (
