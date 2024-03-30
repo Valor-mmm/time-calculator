@@ -10,16 +10,22 @@ export interface ParsingResult {
   to: dayjs.Dayjs
 }
 
-export const parseTime = (
-  timeInput: string,
-): (ParsingResult | TimeDifferenceError)[] =>
-  timeInput.split('\n').map((timeDiff) => {
+type ParsingResultOrError = ParsingResult | TimeDifferenceError
+
+export const parseTime = (timeInput: string): ParsingResultOrError[] =>
+  timeInput.split('\n').flatMap((timeDiff) => {
+    if (timeDiff.trim() === '') {
+      return []
+    }
+
     const result = timeDiff.trim().match(validationRegex)
     if (!result) {
-      return new TimeParsingError(
-        'Could not parse provided time difference.',
-        timeDiff,
-      )
+      return [
+        new TimeParsingError(
+          'Could not parse provided time difference.',
+          timeDiff,
+        ),
+      ] as ParsingResultOrError[]
     }
 
     const from = dayjs()
@@ -35,5 +41,5 @@ export const parseTime = (
         .set('second', 0)
     }
 
-    return { from, to }
+    return [{ from, to }]
   })

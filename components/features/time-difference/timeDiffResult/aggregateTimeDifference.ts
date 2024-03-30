@@ -1,9 +1,9 @@
-import { TimeDifferenceInfoOrError } from '../timeDifference'
-import { TimeInfo } from '../index'
 import { TimeDifferenceError } from '../errors'
+import { TimeDiffRow, TimeInfo } from '../types'
+import { isPause } from '../pauses'
 
 export const aggregateTimeDifference = (
-  timeDifferences: TimeDifferenceInfoOrError[],
+  timeDifferences: TimeDiffRow[],
 ): TimeInfo =>
   timeDifferences.reduce(
     (agg, current) => {
@@ -11,8 +11,16 @@ export const aggregateTimeDifference = (
         return agg
       }
 
-      const hourSum = agg.hours + current.hours
-      const minuteSum = agg.minutes + current.minutes
+      let hourSum: number
+      let minuteSum: number
+
+      if (isPause(current)) {
+        hourSum = agg.hours + current.pause.hours
+        minuteSum = agg.minutes + current.pause.minutes
+      } else {
+        hourSum = agg.hours + current.hours
+        minuteSum = agg.minutes + current.minutes
+      }
       return {
         hours: hourSum + (minuteSum >= 60 ? 1 : 0),
         minutes: minuteSum - (minuteSum >= 60 ? 60 : 0),

@@ -1,5 +1,5 @@
 import { FC } from 'react'
-import { TimeDifferenceInfo } from '../../timeDifference'
+import { TimeDifferenceInfo } from '../../types'
 
 type TimeDiffRowProps = TimeDifferenceInfo
 
