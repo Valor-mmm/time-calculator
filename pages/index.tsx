@@ -6,13 +6,10 @@ const Home: FC = () => {
   return (
     <>
       <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
+        <title>Time Calculator</title>
       </Head>
 
-      <main className="min-h-screen bg-gray-200 dark:bg-gray-800 dark:text-white py-6 sm:py-12">
-        <TimeDifference />
-      </main>
+      <TimeDifference />
     </>
   )
 }
