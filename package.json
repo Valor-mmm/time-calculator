@@ -9,7 +9,7 @@
     "prepare": "husky install",
     "format": "prettier --write ./",
     "lint:format": "prettier --check ./",
-    "lint:es": "next lint",
+    "lint:es": "next lint --fix",
     "lint:ts": "tsc",
     "lint": "npm run lint:format && npm run lint:es && npm run lint:ts"
   },
