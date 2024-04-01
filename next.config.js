@@ -1,7 +1,19 @@
 const { withSentryConfig } = require('@sentry/nextjs')
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {}
+const nextConfig = {
+  headers: async () => [
+    {
+      source: '/',
+      headers: [
+        {
+          key: 'Document-Policy',
+          value: 'js-profiling',
+        },
+      ],
+    },
+  ],
+}
 
 module.exports = withSentryConfig(
   nextConfig,
