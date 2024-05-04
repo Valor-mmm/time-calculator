@@ -31,11 +31,17 @@ export const Layout = ({ children }: PropsWithChildren) => {
       <main className="flex-grow bg-gray-200 dark:bg-gray-800 py-6 sm:py-12">
         {children}
       </main>
-      <footer className="bg-gray-600 dark:bg-gray-500 p-4 flex flex-row justify-center gap-1.5">
-        <Link className="p-2 underline text-blue-500" href={'/privacy'}>
+      <footer className="bg-gray-300 dark:bg-gray-500 p-4 flex flex-row justify-center gap-1.5">
+        <Link
+          className="p-2 underline text-blue-500 dark:text-blue-200"
+          href={'/privacy'}
+        >
           {getPrivacyPolicyName(lang)}
         </Link>
-        <Link className="p-2 underline text-blue-500" href={'/imprint'}>
+        <Link
+          className="p-2 underline text-blue-500 dark:text-blue-200"
+          href={'/imprint'}
+        >
           {getImprintName(lang)}
         </Link>
       </footer>
