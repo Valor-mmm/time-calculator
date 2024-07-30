@@ -21,6 +21,6 @@ Sentry.init({
 
   integrations: [
     // Add browser profiling integration to the list of integrations
-    new Sentry.BrowserProfilingIntegration(),
+    Sentry.browserProfilingIntegration(),
   ],
 })

@@ -28,6 +28,11 @@ updates:
           - '*eslint*'
         update-types:
           - 'major'
+      sentry_major:
+        patterns:
+          - '@sentry/*'
+        update-types:
+          - 'major'
       eslint:
         patterns:
           - '*eslint*'
