@@ -20,13 +20,13 @@
     "@sentry/nextjs": "8.47.0",
     "@sentry/profiling-node": "8.47.0",
     "dayjs": "1.11.13",
-    "next": "14.2.5",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "next": "15.1.7",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
   },
   "devDependencies": {
     "@types/node": "22.10.2",
-    "@types/react": "18.3.12",
+    "@types/react": "19.0.10",
     "@typescript-eslint/eslint-plugin": "7.8.0",
     "@typescript-eslint/parser": "7.8.0",
     "autoprefixer": "10.4.20",
