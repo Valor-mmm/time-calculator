@@ -13,7 +13,7 @@ export const Textarea: FC<TextareaProps> = ({
 }) => {
   return (
     <textarea
-      className="bg-gray-50 dark:bg-gray-700  p-4 shadow rounded-lg focus:outline-none"
+      className="bg-gray-50 dark:bg-gray-700  p-4 shadow-sm rounded-lg focus:outline-hidden"
       placeholder={placeholder}
       onBlur={onBlur}
       autoFocus={autoFocus}
