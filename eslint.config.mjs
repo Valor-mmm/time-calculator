@@ -1,0 +1,13 @@
+export default [
+  {
+    ignores: [
+      'node_modules/',
+      '.next/',
+      'public/',
+      '.eslintrc.js',
+      'next.config.js',
+      'tailwind.config.js',
+      'postcss.config.js',
+    ],
+  },
+]
