@@ -27,10 +27,6 @@ export const TimeDiffResult: FC<TimeDiffResultProps> = ({ result }) => {
   )
 
   useEffect(() => {
-    setConfig(loadLocallyStoredConfig())
-  }, [])
-
-  useEffect(() => {
     storeConfigLocally(config)
   }, [config])
 

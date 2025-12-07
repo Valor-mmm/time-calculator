@@ -9,7 +9,7 @@
     "prepare": "husky",
     "format": "prettier --write ./",
     "lint:format": "prettier --check ./",
-    "lint:es": "next lint --fix",
+    "lint:es": "eslint --fix .",
     "lint:ts": "tsc",
     "lint": "npm run lint:format && npm run lint:es && npm run lint:ts"
   },

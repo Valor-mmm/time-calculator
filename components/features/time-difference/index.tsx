@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from 'react'
+import { FC, useState } from 'react'
 import { Textarea } from '../../lib/textarea/Textarea'
 import { TimeDiffResult } from './timeDiffResult'
 import { parseTime } from './parseTime'

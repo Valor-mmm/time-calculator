@@ -1,5 +1,4 @@
 import { TimeDiffConfig as TimeDiffConfigType } from '../types'
-import { underline } from 'colorette'
 
 interface TimeDiffConfigProps {
   currentConfig: TimeDiffConfigType
