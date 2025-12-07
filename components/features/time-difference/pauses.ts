@@ -4,7 +4,6 @@ import {
   TimeDifferenceInfo,
   TimeDifferenceInfoOrError,
   TimeDiffRow,
-  TimeInfo,
 } from './types'
 import { TimeDifferenceError } from './errors'
 
@@ -17,7 +16,7 @@ export const calculatePauses = (
   const timeDiffRows: TimeDiffRow[] = []
   let start: TimeDifferenceInfo
 
-  for (let tdOe of timeDiffOrError) {
+  for (const tdOe of timeDiffOrError) {
     if (!start && !(tdOe instanceof TimeDifferenceError)) {
       start = tdOe
       timeDiffRows.push(tdOe)
