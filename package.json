@@ -27,11 +27,11 @@
   "devDependencies": {
     "@tailwindcss/postcss": "4.1.18",
     "@types/node": "24.10.1",
-    "@types/react": "19.2.7",
+    "@types/react": "19.2.8",
     "@typescript-eslint/eslint-plugin": "8.50.0",
     "@typescript-eslint/parser": "8.50.0",
     "eslint": "9.39.2",
-    "eslint-config-next": "16.1.0",
+    "eslint-config-next": "16.1.1",
     "eslint-config-prettier": "10.1.8",
     "husky": "9.1.7",
     "lint-staged": "15.2.10",
