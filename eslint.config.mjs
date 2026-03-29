@@ -8,6 +8,7 @@ const config = [
   ...nextTypescript,
   {
     ignores: [
+      '.junie/',
       'node_modules/',
       '.next/',
       'public/',

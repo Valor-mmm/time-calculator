@@ -19,8 +19,13 @@ Sentry.init({
   // in development and sample at a lower rate in production
   replaysSessionSampleRate: 0,
 
+  profilesSampleRate: 1.0,
+  profileLifecycle: 'trace',
+
   integrations: [
     // Add browser profiling integration to the list of integrations
     Sentry.browserProfilingIntegration(),
   ],
 })
+
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart
