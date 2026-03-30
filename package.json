@@ -17,27 +17,27 @@
     "**/*": "prettier --write --ignore-unknown"
   },
   "dependencies": {
-    "@sentry/nextjs": "10.34.0",
-    "@sentry/profiling-node": "10.34.0",
+    "@sentry/nextjs": "10.46.0",
+    "@sentry/profiling-node": "10.46.0",
     "dayjs": "1.11.20",
     "next": "16.2.1",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "4.1.18",
+    "@tailwindcss/postcss": "4.2.2",
     "@types/node": "24.10.1",
     "@types/react": "19.2.14",
-    "@typescript-eslint/eslint-plugin": "8.53.0",
-    "@typescript-eslint/parser": "8.53.0",
+    "@typescript-eslint/eslint-plugin": "8.57.2",
+    "@typescript-eslint/parser": "8.57.2",
     "eslint": "9.39.2",
-    "eslint-config-next": "16.1.0",
+    "eslint-config-next": "16.2.1",
     "eslint-config-prettier": "10.1.8",
     "husky": "9.1.7",
     "lint-staged": "15.2.10",
     "postcss": "8.5.8",
     "prettier": "3.8.1",
-    "tailwindcss": "4.1.18",
+    "tailwindcss": "4.2.2",
     "typescript": "5.9.3"
   }
 }
