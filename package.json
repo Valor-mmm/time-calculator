@@ -17,8 +17,8 @@
     "**/*": "prettier --write --ignore-unknown"
   },
   "dependencies": {
-    "@sentry/nextjs": "10.53.1",
-    "@sentry/profiling-node": "10.53.1",
+    "@sentry/nextjs": "10.55.0",
+    "@sentry/profiling-node": "10.55.0",
     "dayjs": "1.11.20",
     "next": "16.2.6",
     "react": "19.2.6",
@@ -26,10 +26,10 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.0",
-    "@types/node": "25.8.0",
+    "@types/node": "25.9.1",
     "@types/react": "19.2.14",
-    "@typescript-eslint/eslint-plugin": "8.59.3",
-    "@typescript-eslint/parser": "8.59.3",
+    "@typescript-eslint/eslint-plugin": "8.60.0",
+    "@typescript-eslint/parser": "8.60.0",
     "eslint": "9.39.2",
     "eslint-config-next": "16.2.6",
     "eslint-config-prettier": "10.1.8",
