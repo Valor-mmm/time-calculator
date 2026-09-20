@@ -1,17 +1,22 @@
 import { TimeDifferenceError } from '../../errors'
 import { FC } from 'react'
 import { TimeParsingError } from '../../errors/TimeParsingError'
-
-interface TimeDiffErrorRowProps {
-  error: TimeDifferenceError
-}
+import { TimeOrderError } from '../../errors/TimeOrderError'
 
 const determineErrorMessage = (error: TimeDifferenceError): string => {
   if (error instanceof TimeParsingError) {
     return `Could not parse this input: "${error.parsedString}"`
   }
 
+  if (error instanceof TimeOrderError) {
+    return `${error.currentStart} starts before the previous entry ended at ${error.previousEnd}`
+  }
+
   return `An unexpected error happened: ${error.message}`
+}
+
+interface TimeDiffErrorRowProps {
+  error: TimeDifferenceError
 }
 
 export const TimeDiffErrorRow: FC<TimeDiffErrorRowProps> = ({ error }) => {

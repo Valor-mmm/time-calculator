@@ -6,31 +6,50 @@ import {
   TimeDiffRow,
 } from './types'
 import { TimeDifferenceError } from './errors'
+import { TimeOrderError } from './errors/TimeOrderError'
 
 export const isPause = (input: TimeDiffRow): input is Pause =>
-  input.hasOwnProperty('pause')
+  !(input instanceof TimeDifferenceError) && 'pause' in input
 
+/**
+ * Interleaves the gap between two consecutive entries as a `Pause` row.
+ *
+ * An entry that starts before the previous one ended would produce a negative
+ * pause, so it is surfaced as a `TimeOrderError` row instead of quietly
+ * subtracting from the total.
+ */
 export const calculatePauses = (
   timeDiffOrError: TimeDifferenceInfoOrError[],
 ): TimeDiffRow[] => {
   const timeDiffRows: TimeDiffRow[] = []
-  let start: TimeDifferenceInfo
+  let start: TimeDifferenceInfo | undefined
 
   for (const tdOe of timeDiffOrError) {
-    if (!start && !(tdOe instanceof TimeDifferenceError)) {
+    if (tdOe instanceof TimeDifferenceError) {
+      timeDiffRows.push(tdOe)
+      start = undefined
+      continue
+    }
+
+    if (!start) {
       start = tdOe
       timeDiffRows.push(tdOe)
-    } else if (!(tdOe instanceof TimeDifferenceError)) {
+      continue
+    }
+
+    if (tdOe.from.isBefore(start.to)) {
+      timeDiffRows.push(
+        new TimeOrderError(start.to.format('HH.mm'), tdOe.from.format('HH.mm')),
+      )
+    } else {
       timeDiffRows.push({
         between: { start, end: tdOe },
         pause: calculateTimeDiff(start.to, tdOe.from),
       })
-      timeDiffRows.push(tdOe)
-      start = tdOe
-    } else {
-      timeDiffRows.push(tdOe)
-      start = undefined
     }
+
+    timeDiffRows.push(tdOe)
+    start = tdOe
   }
 
   return timeDiffRows
