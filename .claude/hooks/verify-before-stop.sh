@@ -18,8 +18,13 @@ process.stdin.on("data", (c) => (d += c)).on("end", () => {
 })')
 [ "$already_active" = "1" ] && exit 0
 
-# Nothing to verify if the working tree is untouched.
-if git diff --quiet HEAD 2>/dev/null && [ -z "$(git ls-files --others --exclude-standard)" ]; then
+# Nothing to verify if this branch changed nothing. Comparing against the base
+# branch rather than the working tree matters: an agent that has committed its
+# work still has to answer for it.
+base=$(git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main 2>/dev/null)
+if [ -n "$base" ] \
+  && git diff --quiet "$base" 2>/dev/null \
+  && [ -z "$(git ls-files --others --exclude-standard)" ]; then
   exit 0
 fi
 
