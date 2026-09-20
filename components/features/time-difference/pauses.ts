@@ -1,12 +1,12 @@
 import { calculateTimeDiff } from './timeDifference'
 import {
+  isDayHeader,
+  isNoteLine,
   Pause,
   TimeDifferenceInfo,
-  TimeDifferenceInfoOrError,
   TimeDiffRow,
 } from './types'
 import { TimeDifferenceError } from './errors'
-import { TimeOrderError } from './errors/TimeOrderError'
 
 export const isPause = (input: TimeDiffRow): input is Pause =>
   !(input instanceof TimeDifferenceError) && 'pause' in input
@@ -14,43 +14,45 @@ export const isPause = (input: TimeDiffRow): input is Pause =>
 /**
  * Interleaves the gap between two consecutive entries as a `Pause` row.
  *
- * An entry that starts before the previous one ended would produce a negative
- * pause, so it is surfaced as a `TimeOrderError` row instead of quietly
- * subtracting from the total.
+ * A day header ends the run: the gap from knocking off to starting the next
+ * work day is not a break, and counting it would make the pause total
+ * meaningless on notes covering several days. A gap that merely crosses
+ * midnight is still a pause — that is a night shift, not a new work day.
+ *
+ * An error also ends the run, since nothing can be said about a gap measured
+ * against a line that could not be read.
  */
-export const calculatePauses = (
-  timeDiffOrError: TimeDifferenceInfoOrError[],
-): TimeDiffRow[] => {
-  const timeDiffRows: TimeDiffRow[] = []
+export const calculatePauses = (rows: TimeDiffRow[]): TimeDiffRow[] => {
+  const withPauses: TimeDiffRow[] = []
   let start: TimeDifferenceInfo | undefined
 
-  for (const tdOe of timeDiffOrError) {
-    if (tdOe instanceof TimeDifferenceError) {
-      timeDiffRows.push(tdOe)
+  for (const row of rows) {
+    if (isNoteLine(row)) {
+      withPauses.push(row)
+      continue
+    }
+
+    if (row instanceof TimeDifferenceError || isDayHeader(row)) {
+      withPauses.push(row)
       start = undefined
       continue
     }
 
-    if (!start) {
-      start = tdOe
-      timeDiffRows.push(tdOe)
+    if (isPause(row)) {
+      withPauses.push(row)
       continue
     }
 
-    if (tdOe.from.isBefore(start.to)) {
-      timeDiffRows.push(
-        new TimeOrderError(start.to.format('HH.mm'), tdOe.from.format('HH.mm')),
-      )
-    } else {
-      timeDiffRows.push({
-        between: { start, end: tdOe },
-        pause: calculateTimeDiff(start.to, tdOe.from),
+    if (start) {
+      withPauses.push({
+        between: { start, end: row },
+        pause: calculateTimeDiff(start.to, row.from),
       })
     }
 
-    timeDiffRows.push(tdOe)
-    start = tdOe
+    withPauses.push(row)
+    start = row
   }
 
-  return timeDiffRows
+  return withPauses
 }

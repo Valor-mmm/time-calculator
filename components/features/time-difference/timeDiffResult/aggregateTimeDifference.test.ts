@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import dayjs from 'dayjs'
-import { aggregateTimeDifference } from './aggregateTimeDifference'
+import {
+  aggregatePauses,
+  aggregateTimeDifference,
+} from './aggregateTimeDifference'
 import { TimeParsingError } from '../errors/TimeParsingError'
 import { Pause, TimeDifferenceInfo, TimeInfo } from '../types'
 
@@ -44,13 +47,20 @@ describe('aggregateTimeDifference', () => {
     expect(aggregateTimeDifference(entries)).toEqual({ hours: 4, minutes: 10 })
   })
 
-  it('sums pause durations', () => {
+  it('skips pause rows', () => {
+    expect(
+      aggregateTimeDifference([entry(1, 0), pause({ hours: 5, minutes: 0 })]),
+    ).toEqual({ hours: 1, minutes: 0 })
+  })
+
+  it('skips headers and notes', () => {
     expect(
       aggregateTimeDifference([
-        pause({ hours: 0, minutes: 45 }),
-        pause({ hours: 1, minutes: 30 }),
+        { label: 'Samstag' },
+        entry(1, 0),
+        { note: 'booked elsewhere' },
       ]),
-    ).toEqual({ hours: 2, minutes: 15 })
+    ).toEqual({ hours: 1, minutes: 0 })
   })
 
   it('skips error rows', () => {
@@ -65,5 +75,32 @@ describe('aggregateTimeDifference', () => {
 
   it('returns zero for an empty list', () => {
     expect(aggregateTimeDifference([])).toEqual({ hours: 0, minutes: 0 })
+  })
+})
+
+describe('aggregatePauses', () => {
+  it('sums pause durations', () => {
+    expect(
+      aggregatePauses([
+        pause({ hours: 0, minutes: 45 }),
+        pause({ hours: 1, minutes: 30 }),
+      ]),
+    ).toEqual({ hours: 2, minutes: 15 })
+  })
+
+  it('skips entries, headers, notes and errors', () => {
+    expect(
+      aggregatePauses([
+        entry(8, 0),
+        { label: 'Samstag' },
+        { note: 'booked elsewhere' },
+        new TimeParsingError('nope', 'x'),
+        pause({ hours: 0, minutes: 30 }),
+      ]),
+    ).toEqual({ hours: 0, minutes: 30 })
+  })
+
+  it('returns zero for an empty list', () => {
+    expect(aggregatePauses([])).toEqual({ hours: 0, minutes: 0 })
   })
 })

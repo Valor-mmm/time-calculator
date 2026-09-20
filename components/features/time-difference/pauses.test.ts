@@ -2,16 +2,20 @@ import { describe, expect, it } from 'vitest'
 import dayjs from 'dayjs'
 import { calculatePauses, isPause } from './pauses'
 import { TimeDifferenceError } from './errors'
-import { TimeOrderError } from './errors/TimeOrderError'
 import { TimeParsingError } from './errors/TimeParsingError'
 import { Pause, TimeDifferenceInfo } from './types'
-import { timeDifference } from './timeDifference'
 
 const entry = (from: string, to: string): TimeDifferenceInfo => {
-  const [result] = timeDifference([
-    { from: dayjs(`2026-09-20T${from}:00`), to: dayjs(`2026-09-20T${to}:00`) },
-  ])
-  return result as TimeDifferenceInfo
+  const start = dayjs(`2026-09-20T${from}:00`)
+  const end = dayjs(`2026-09-20T${to}:00`)
+  const diffInMinutes = end.diff(start, 'minute')
+
+  return {
+    from: start,
+    to: end,
+    hours: Math.floor(diffInMinutes / 60),
+    minutes: diffInMinutes % 60,
+  }
 }
 
 describe('isPause', () => {
@@ -30,6 +34,11 @@ describe('isPause', () => {
 
   it('rejects an error row', () => {
     expect(isPause(new TimeParsingError('nope', 'x'))).toBe(false)
+  })
+
+  it('rejects a header and a note', () => {
+    expect(isPause({ label: 'Samstag' })).toBe(false)
+    expect(isPause({ note: 'booked elsewhere' })).toBe(false)
   })
 })
 
@@ -93,28 +102,28 @@ describe('calculatePauses', () => {
     expect((rows[1] as Pause).pause).toEqual({ hours: 0, minutes: 0 })
   })
 
-  it('reports an out-of-order entry instead of a negative pause', () => {
+  it('does not bridge a pause across a day header', () => {
     const rows = calculatePauses([
-      entry('09:00', '12:00'),
-      entry('08:00', '10:00'),
+      entry('09:00', '16:30'),
+      { label: 'Samstag' },
+      entry('09:00', '11:00'),
     ])
 
-    expect(rows[1]).toBeInstanceOf(TimeOrderError)
+    expect(rows).toHaveLength(3)
     expect(rows.filter(isPause)).toHaveLength(0)
   })
 
-  it('names both sides of the offending pair in the order error', () => {
+  it('still bridges a pause across a note', () => {
     const rows = calculatePauses([
       entry('09:00', '12:00'),
-      entry('08:00', '10:00'),
+      { note: 'booked on another day' },
+      entry('13:00', '17:00'),
     ])
-    const error = rows[1] as TimeOrderError
 
-    expect(error.previousEnd).toBe('12.00')
-    expect(error.currentStart).toBe('08.00')
+    expect(rows.filter(isPause)).toHaveLength(1)
   })
 
-  it('does not bridge a pause across an unparsable line', () => {
+  it('does not bridge a pause across an unreadable line', () => {
     const rows = calculatePauses([
       entry('09:00', '12:00'),
       new TimeParsingError('nope', 'garbage'),
