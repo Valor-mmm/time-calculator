@@ -49,10 +49,10 @@ test.describe('time calculator', () => {
     page,
   }) => {
     await page.goto('/')
-    await enterTimes(page, 'definitely not a time')
+    await enterTimes(page, '1x.00 - 12.00')
 
     await expect(
-      page.getByText('Could not parse this input: "definitely not a time"'),
+      page.getByText('Could not parse this input: "1x.00 - 12.00"'),
     ).toBeVisible()
     await expect(page.getByText('0 Hours 0 Minutes')).toBeVisible()
   })
@@ -67,13 +67,40 @@ test.describe('time calculator', () => {
     ).toBeHidden()
   })
 
-  test('flags entries that run backwards', async ({ page }) => {
+  test('splits a pasted Friday-to-Sunday page into days', async ({ page }) => {
     await page.goto('/')
-    await enterTimes(page, '09.00 - 12.00\n08.00 - 10.00')
+    await enterTimes(
+      page,
+      '08.00 - 16.30\nSamstag:\n09.00 - 11.00\nSonntag:\n10.00 - 12.00',
+    )
 
-    await expect(
-      page.getByText('08.00 starts before the previous entry ended at 12.00'),
-    ).toBeVisible()
+    await expect(page.getByText('Samstag')).toBeVisible()
+    await expect(page.getByText('Sonntag')).toBeVisible()
+    await expect(page.getByText('12 Hours 30 Minutes')).toBeVisible()
+  })
+
+  test('takes a pasted work week without a single error row', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    await enterTimes(
+      page,
+      '08.00 - 16.30\n08.00 - 16.30\n08.00 - 16.30\n08.00 - 13.00',
+    )
+
+    await expect(page.getByText(/Could not parse/)).toBeHidden()
+    await expect(page.getByText('30 Hours 30 Minutes')).toBeVisible()
+  })
+
+  test('keeps a prose note in the table instead of flagging it', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    await enterTimes(page, '08.00 - 12.00\nauf Mittwoch gebucht\n13.00 - 17.00')
+
+    await expect(page.getByText('auf Mittwoch gebucht')).toBeVisible()
+    await expect(page.getByText(/Could not parse/)).toBeHidden()
+    await expect(page.getByText('8 Hours 0 Minutes')).toBeVisible()
   })
 
   test('switches away from the browser-detected language on the first click', async ({
