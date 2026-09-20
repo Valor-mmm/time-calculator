@@ -43,7 +43,6 @@ tsconfig.tsbuildinfo
 .junie/
 
 # testing
-/coverage
 /playwright-report
 /test-results
 /blob-report
