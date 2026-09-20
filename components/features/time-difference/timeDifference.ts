@@ -1,4 +1,4 @@
-import { ParsingResult } from './parseTime'
+import { ParsingResultOrError } from './parseTime'
 import { TimeDifferenceError } from './errors'
 import dayjs from 'dayjs'
 import { TimeDifferenceInfoOrError, TimeInfo } from './types'
@@ -16,7 +16,7 @@ export const calculateTimeDiff = (
 }
 
 export const timeDifference = (
-  timePairs: (ParsingResult | TimeDifferenceError)[],
+  timePairs: ParsingResultOrError[],
 ): TimeDifferenceInfoOrError[] =>
   timePairs.map((timePair) => {
     if (timePair instanceof TimeDifferenceError) {
