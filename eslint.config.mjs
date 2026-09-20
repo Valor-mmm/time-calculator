@@ -9,9 +9,13 @@ const config = [
   {
     ignores: [
       '.junie/',
+      '.agents/',
       'node_modules/',
       '.next/',
       'public/',
+      'coverage/',
+      'playwright-report/',
+      'test-results/',
       '.eslintrc.js',
       'next.config.js',
       'tailwind.config.js',
