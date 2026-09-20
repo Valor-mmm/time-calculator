@@ -12,6 +12,9 @@ export default defineConfig({
   reporter: process.env.CI ? 'github' : 'list',
   use: {
     baseURL,
+    // Pinned so the language-switch spec exercises the German-browser case
+    // rather than whatever locale the runner happens to have.
+    locale: 'de-DE',
     trace: 'on-first-retry',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],

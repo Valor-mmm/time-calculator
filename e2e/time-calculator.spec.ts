@@ -57,6 +57,16 @@ test.describe('time calculator', () => {
     await expect(page.getByText('0 Hours 0 Minutes')).toBeVisible()
   })
 
+  test('counts a shift that resumes after midnight', async ({ page }) => {
+    await page.goto('/')
+    await enterTimes(page, '20.00 - 23.00\n01.00 - 04.00')
+
+    await expect(page.getByText('6 Hours 0 Minutes')).toBeVisible()
+    await expect(
+      page.getByText(/starts before the previous entry/),
+    ).toBeHidden()
+  })
+
   test('flags entries that run backwards', async ({ page }) => {
     await page.goto('/')
     await enterTimes(page, '09.00 - 12.00\n08.00 - 10.00')
@@ -66,20 +76,20 @@ test.describe('time calculator', () => {
     ).toBeVisible()
   })
 
-  test('reaches the legal pages and switches their language', async ({
+  test('switches away from the browser-detected language on the first click', async ({
     page,
   }) => {
+    // The browser locale is pinned to de-DE, so the page starts in German and
+    // the first click is the case that used to do nothing at all.
     await page.goto('/')
 
-    await page
-      .getByRole('link', { name: /Privacy Policy|Datenschutzerklärung/ })
-      .click()
+    await page.getByRole('link', { name: 'Datenschutzerklärung' }).click()
     await expect(page).toHaveURL(/\/privacy$/)
-
-    await page.getByRole('button', { name: 'Deutsch' }).click()
-    await expect(page.getByRole('link', { name: 'Impressum' })).toBeVisible()
 
     await page.getByRole('button', { name: 'English' }).click()
     await expect(page.getByRole('link', { name: 'Imprint' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Deutsch' }).click()
+    await expect(page.getByRole('link', { name: 'Impressum' })).toBeVisible()
   })
 })
