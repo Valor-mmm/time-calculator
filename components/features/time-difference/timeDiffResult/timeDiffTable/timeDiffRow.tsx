@@ -8,12 +8,15 @@ export const TimeDiffRow: FC<TimeDiffRowProps> = ({
   to,
   hours,
   minutes,
+  isOpenEnded,
 }) => {
+  const range = `${from.format('HH.mm')} - ${isOpenEnded ? 'now' : to.format('HH.mm')}`
+
   return (
     <tr>
       <td className="p-1">
         <span className="bg-cyan-200 dark:bg-cyan-600 font-mono rounded-lg p-1 text-center">
-          {`${from.format('HH.mm')} - ${to.format('HH.mm')}`}
+          {range}
         </span>
       </td>
       <td className="p-1">:</td>

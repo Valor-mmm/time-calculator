@@ -1,29 +1,77 @@
-# Next.js + Tailwind CSS Example
+# Time Calculator
 
-This example shows how to use [Tailwind CSS](https://tailwindcss.com/) [(v2.2)](https://blog.tailwindcss.com/tailwindcss-2-2) with Next.js. It follows the steps outlined in the official [Tailwind docs](https://tailwindcss.com/docs/guides/nextjs).
+A small, entirely client-side web app for adding up worked hours. Paste lines
+of time ranges, get per-entry durations, the gaps between them and a total.
 
-It uses the new [`Just-in-Time Mode`](https://tailwindcss.com/docs/just-in-time-mode) for Tailwind CSS.
+Live at **[time-calculator.vercel.app](https://time-calculator.vercel.app)**.
 
-## Preview
-
-Preview the example live on [StackBlitz](http://stackblitz.com/):
-
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/vercel/next.js/tree/canary/examples/with-tailwindcss)
-
-## Deploy your own
-
-Deploy the example using [Vercel](https://vercel.com?utm_source=github&utm_medium=readme&utm_campaign=next-example):
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/git/external?repository-url=https://github.com/vercel/next.js/tree/canary/examples/with-tailwindcss&project-name=with-tailwindcss&repository-name=with-tailwindcss)
-
-## How to use
-
-Execute [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) with [npm](https://docs.npmjs.com/cli/init) or [Yarn](https://yarnpkg.com/lang/en/docs/cli/create/) to bootstrap the example:
-
-```bash
-npx create-next-app --example with-tailwindcss with-tailwindcss-app
-# or
-yarn create next-app --example with-tailwindcss with-tailwindcss-app
+```
+09.00 - 12.30      09.00 - 12.30 : 3h 30m
+13.00 - 17.00  ->  13.00 - 17.00 : 4h 0m
+                   ───────────────────────
+                      7 Hours 30 Minutes
 ```
 
-Deploy it to the cloud with [Vercel](https://vercel.com/new?utm_source=github&utm_medium=readme&utm_campaign=next-example) ([Documentation](https://nextjs.org/docs/deployment)).
+## Input format
+
+Paste your notes as they are. One entry per line; hour and minute may be
+separated by `:`, `.` or `,`, and the dash is optional:
+
+```
+Freitag:
+08.00 - 16.30
+auf Mittwoch gebucht
+
+Samstag:
+09.00 - 11.00
+```
+
+- A line ending in a **colon** starts a new work day (`Samstag:`). Each day
+  gets its own subtotal, and the gap between two days is not counted as a
+  break.
+- **Prose lines** are kept as notes, not reported as errors.
+- **Leaving out the end time** (`09.00`) means "still running" — the entry
+  lasts until now. A start that has not happened yet is flagged instead.
+- **Crossing midnight** (`22.00 - 02.00`) is a night shift and counts as 4
+  hours. So is a shift that stops before midnight and resumes after it
+  (`20.00 - 23.00` then `01.00 - 04.00`) — the gap in between stays a break,
+  because that is one work day, not two.
+- A time that goes **backwards** is read as the clock having passed midnight,
+  not as a mistake. Use a day header to say where a work day actually ends.
+- **Out-of-range times** (`24.00`, `12.60`), digit runs that cannot be a time
+  (`123.45`), and lines holding something time-shaped that was not understood
+  (`1x.00 - 12.00`, or two ranges on one line) are reported as error rows
+  rather than silently changing the total.
+- Text around the times is ignored, so `Mo 09.00 - 12.30 lunch` works.
+
+The "Show Pauses" toggle adds a row for each gap within a day plus a separate
+pause total. The choice is remembered in `localStorage`.
+
+## Development
+
+```bash
+npm install
+npm run dev          # http://localhost:3000
+```
+
+| Command                 | What it does                                               |
+| ----------------------- | ---------------------------------------------------------- |
+| `npm run dev`           | Development server                                         |
+| `npm run build`         | Production build                                           |
+| `npm run lint`          | Prettier check, ESLint and `tsc` — the CI gate             |
+| `npm run fix`           | Apply Prettier and ESLint fixes                            |
+| `npm run test`          | Unit and component tests (Vitest)                          |
+| `npm run test:watch`    | Vitest in watch mode                                       |
+| `npm run test:coverage` | Tests with a coverage report                               |
+| `npm run test:e2e`      | End-to-end tests (Playwright, needs `npm run build` first) |
+| `npm run verify`        | Lint, test and build in one go                             |
+
+## Stack
+
+Next.js (Pages Router) · React · TypeScript · Tailwind CSS · dayjs · Sentry ·
+deployed on Vercel.
+
+## Documentation
+
+- [`CLAUDE.md`](./CLAUDE.md) — working agreements, also for AI agents
+- [`docs/`](./docs/README.md) — architecture, domain logic, testing, tooling and CI

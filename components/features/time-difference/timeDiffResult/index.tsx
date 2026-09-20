@@ -1,27 +1,25 @@
 import { FC, useEffect, useMemo, useState } from 'react'
 import { TimeDiffTable } from './timeDiffTable'
-import { aggregateTimeDifference } from './aggregateTimeDifference'
+import {
+  aggregatePauses,
+  aggregateTimeDifference,
+} from './aggregateTimeDifference'
 import {
   type TimeDiffConfig as TimeDiffConfigType,
   TimeDiffRow,
 } from '../types'
 import { TimeDiffConfig } from './timeDiffConfig'
 import { loadLocallyStoredConfig, storeConfigLocally } from './configStore'
-import { isPause } from '../pauses'
+import { groupByDay } from './groupByDay'
 
 interface TimeDiffResultProps {
   result: TimeDiffRow[]
 }
 
 export const TimeDiffResult: FC<TimeDiffResultProps> = ({ result }) => {
-  const totalTime = useMemo(
-    () => aggregateTimeDifference(result.filter((item) => !isPause(item))),
-    [result],
-  )
-  const totalPauseTime = useMemo(
-    () => aggregateTimeDifference(result.filter((item) => isPause(item))),
-    [result],
-  )
+  const days = useMemo(() => groupByDay(result), [result])
+  const totalTime = useMemo(() => aggregateTimeDifference(result), [result])
+  const totalPauseTime = useMemo(() => aggregatePauses(result), [result])
   const [config, setConfig] = useState<TimeDiffConfigType>(
     loadLocallyStoredConfig(),
   )
@@ -33,7 +31,7 @@ export const TimeDiffResult: FC<TimeDiffResultProps> = ({ result }) => {
   return (
     <section className="container mx-auto bg-gray-200 dark:bg-gray-700 border-2 border-gray-400 border-opacity-50 rounded-lg p-4 sm:flex sm:justify-center flex-col">
       <TimeDiffTable
-        timeDifferences={result}
+        days={days}
         totalTime={totalTime}
         totalPauseTime={totalPauseTime}
         config={config}
