@@ -35,8 +35,8 @@ See [testing.md](./testing.md).
 1. Ranges crossing midnight no longer produce negative durations — a new
    `normalizeSequence` stage rolls the calendar day forward and carries the
    offset to later entries.
-2. Out-of-order entries surface as a `TimeOrderError` row instead of a
-   negative pause silently shrinking the total.
+2. Out-of-order entries no longer produce a negative pause. This first became
+   a warning row and was then replaced entirely — see the third round below.
 3. `parseTime` bounds-checks hours and minutes, so `24.00` and `12.60` become
    parse errors instead of being rolled over by dayjs.
 4. `configStore` no longer throws on corrupt `localStorage`; it validates the
@@ -60,6 +60,26 @@ inert as soon as an agent committed, and that four documents asserted an
 invariant `normalizeSequence` does not provide. All fixed, each with a
 regression test; the locale is now pinned and the hook compares against the
 merge base.
+
+**A third round after the real workflow came to light.** The app had been
+built and documented as "one day of times". It is actually used by pasting a
+whole notes page: one page per day, except Friday, Saturday and Sunday which
+share a page with `Samstag:` style headers, plus the odd prose line. Under the
+old model an ordinary pasted work week produced four red error rows and a
+weekend page flagged every extra day.
+
+- Day headers are recognised, split the rows into work days with their own
+  subtotals, and stop a pause being counted across them.
+- Prose lines are kept as notes instead of being reported as errors; only a
+  line whose digits cannot be a time still is.
+- The out-of-order warning is gone. No threshold below twenty-four hours works
+  (the next work day can start at any time) and rolling is capped at a day
+  anyway, so "always roll" is the only coherent rule. A gap that merely
+  crosses midnight stays a pause, because a night shift is one work day.
+- Lines holding something time-shaped that was not understood — `1x.00 -
+12.00`, or two ranges crammed onto one line — are now rejected rather than
+  half-read, which was silently changing the total.
+- Open-ended entries render as `09.00 - now`.
 
 **TypeScript** — `strict: true`, `target: ES2022`, `moduleResolution: bundler`.
 The codebase type-checks clean; `pauses.ts`, which depended on the loose
@@ -92,9 +112,14 @@ named `time-calculator` rather than `with-tailwindcss`.
   `eslint.config.mjs`.
 - **Coverage is reported but not enforced.** No threshold is set.
 - A reversed entry such as `12.00 - 11.00` reads as a 23-hour night shift
-  rather than an error, and the roll-forward between entries is bounded by a
-  12-hour heuristic — deliberate trade-offs, documented in
+  rather than an error — a deliberate trade-off, documented in
   [domain-logic.md](./domain-logic.md).
+- Automatic typo detection is gone with the out-of-order warning. Several days
+  pasted **without** header lines still total correctly, but their gaps count
+  as breaks and inflate the pause total.
+- Two requested features are not built: a configurable daily target with the
+  time still to work, and the correction mode in
+  [planned-correction-mode.md](./planned-correction-mode.md).
 - The PostToolUse hook type-checks the whole project rather than the edited
   file, so mid-refactor it reports errors in files the agent has not reached
   yet, and a file outside the tsconfig `include` goes unchecked.

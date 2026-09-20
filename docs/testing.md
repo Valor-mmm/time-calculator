@@ -22,12 +22,15 @@ tests with no mocking beyond a frozen clock.
   and `12.60` instead of letting dayjs roll them over.
 - `normalizeSequence.test.ts` — midnight crossing, the day offset carrying to
   later entries, multiple crossings, a shift resuming after midnight, both
-  sides of the 12-hour plausibility limit, open-ended entries including one
-  whose start is still in the future, and errors passing through.
+  a shift resuming after midnight, a pasted work week, a Friday-to-Sunday page
+  with headers, open-ended entries including one whose start is still in the
+  future, and headers, notes and errors passing through.
 - `timeDifference.test.ts` — the hour/minute split, second truncation, and
   errors passing through.
-- `pauses.test.ts` — gap insertion, zero-length gaps, `TimeOrderError` for
-  backwards entries, and no pause bridging an unparsable line.
+- `pauses.test.ts` — gap insertion, zero-length gaps, no pause bridging a day
+  header or an unparsable line, and a note not breaking the run.
+- `groupByDay` is covered through the integration test, which asserts the day
+  labels and per-day totals of a Friday-to-Sunday page.
 - `aggregateTimeDifference.test.ts` — minute carry, repeated carry, error rows
   skipped.
 - `configStore.test.ts` — defaults, corrupt JSON, wrong shapes, storage that
@@ -67,7 +70,10 @@ These pin down bugs that were actually in the code:
 1. **Negative durations across midnight** — `22.00 - 02.00` used to produce
    `-20h`. Pinned in `normalizeSequence.test.ts` and in the integration test's
    "durations must never go negative" block.
-2. **Negative pauses from out-of-order entries** — now a `TimeOrderError` row.
+2. **False warnings on ordinary multi-day input** — an out-of-order warning
+   turned a pasted work week into four red rows and flagged every weekend day
+   on a Friday-to-Sunday page. Pinned by the "reports no errors at all for a
+   plain pasted week" test and its end-to-end counterpart.
 3. **`99.99` accepted and silently rolled over** by dayjs — now a
    `TimeParsingError`.
 4. **The language switch ignoring the first click** when the browser language

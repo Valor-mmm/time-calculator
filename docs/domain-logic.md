@@ -2,28 +2,45 @@
 
 All files below live in `components/features/time-difference/`.
 
+## What the input actually is
+
+Not a time format — **pasted notes**. One page of notes per day, except that
+Friday, Saturday and Sunday share a page, with a header line such as
+`Samstag:` introducing each extra day. Alongside the times there is the
+occasional prose note ("auf Mittwoch gebucht"). Everything on the page arrives
+in one paste, so the pipeline has to cope with all of it.
+
+That shapes every rule below: multi-day input is the normal case, prose is not
+an error, and a work day ends where the notes say it does.
+
 ## Pipeline
 
 ```
 parseTime → normalizeSequence → timeDifference → calculatePauses
                                                         ↓
-                                            aggregateTimeDifference
+                                     groupByDay + aggregateTimeDifference
+                                                 + aggregatePauses
 ```
 
-Five pure functions, no React, no side effects. `calculateRows()` in
-`index.tsx` is the single entry point that wires them together; it is exported
-so the whole chain can be tested as one unit.
+Pure functions, no React, no side effects. `calculateRows()` in `index.tsx` is
+the single entry point that wires the first four together; it is exported so
+the whole chain can be tested as one unit. `groupByDay` and the aggregations
+run in `TimeDiffResult` because they exist only for display.
 
 ## Types (`types.ts`)
 
 ```ts
 TimeInfo                  { hours: number; minutes: number }
-ParsingResult             { from: Dayjs; to: Dayjs }
+ParsingResult             { from: Dayjs; to: Dayjs; isOpenEnded?: boolean }
+DayHeader                 { label: string }          — `Samstag:`
+NoteLine                  { note: string }           — prose kept for context
+ParsedLine                ParsingResult | DayHeader | NoteLine | Error
+DayGroup                  { label?, rows, total, pauseTotal }
 ParsingResultOrError      ParsingResult | TimeDifferenceError
 TimeDifferenceInfo        ParsingResult & TimeInfo
 TimeDifferenceInfoOrError TimeDifferenceInfo | TimeDifferenceError
 Pause                     { between: { start, end }, pause: TimeInfo }
-TimeDiffRow               TimeDifferenceInfoOrError | Pause
+TimeDiffRow               TimeDifferenceInfoOrError | Pause | DayHeader | NoteLine
 TimeDiffConfig            { showPauses: boolean }
 ```
 
@@ -35,8 +52,6 @@ done by `instanceof TimeDifferenceError` first, then `isPause()`.
 - `TimeDifferenceError extends Error` — the base, used as the union marker.
 - `TimeParsingError` — carries `parsedString`, the offending input line, so the
   UI can echo it back.
-- `TimeOrderError` — carries `previousEnd` and `currentStart`, raised when an
-  entry starts implausibly far before the previous one ended.
 - `FutureStartError` — carries `start`, raised for an open-ended entry whose
   start has not happened yet.
 
@@ -47,7 +62,19 @@ mode means adding a class here plus a branch in `determineErrorMessage`
 
 ## `parseTime(timeInput: string): ParsingResultOrError[]`
 
-Splits on `\n`, drops blank lines, and matches each line against:
+Produces one `ParsedLine` per non-blank line, in this order of precedence:
+
+1. A line ending in `:` is a **day header**, label without the colon.
+2. A line whose digits cannot be a time is a `TimeParsingError`.
+3. A line matching the time pattern is an **entry**.
+4. A line still containing a digit is a `TimeParsingError` — it was probably
+   meant to be a time.
+5. Anything else is a **note**.
+
+Rule 4 is why prose is safe: `auf Mittwoch gebucht` has no digits and becomes a
+note, while `1x.00 - 12.00` does and becomes an error.
+
+Entries are matched against:
 
 ```
 /(\d{1,2})[:.,](\d{1,2})[.\s]*-?(?:[.\s]*(\d{1,2})[:.,](\d{1,2}))?/
@@ -72,36 +99,34 @@ Splits on `\n`, drops blank lines, and matches each line against:
 
 Non-matching lines yield a `TimeParsingError` holding the raw line.
 
-## `normalizeSequence(entries): ParsingResultOrError[]`
+## `normalizeSequence(lines): ParsedLine[]`
 
 Because every entry is parsed onto today's date, `22.00 - 02.00` would end
-before it starts, and a shift that stops before midnight and resumes after it
-would look like it ran backwards. This stage walks the entries in order,
-keeping a running day offset and the previous entry's end:
+before it starts, and any second day on the page would look like it ran
+backwards. This stage walks the lines in order, keeping a running day offset
+and the previous entry's end:
 
 - The offset is added to both ends of every entry.
-- If an entry starts before the previous one ended, its day rolls forward —
-  but only while the gap that implies stays within `MAX_IMPLIED_PAUSE_HOURS`
-  (12). Beyond that it is far more likely a typo than a shift resuming after
-  midnight, so the entry is left alone and `calculatePauses` reports it.
-- If an entry still ends before it starts, its end moves one day forward (it
-  crosses midnight) and the offset increments for everything that follows.
+- If an entry starts before the previous one ended, its day rolls forward.
+- If an entry still ends before it starts, its end moves one day forward and
+  the offset increments for everything that follows.
 - An **open-ended** entry ends at the wall clock, which cannot be rolled. If
   the sequence has already moved past that instant, the entry cannot be
   running and becomes a `FutureStartError` — without consuming a day offset,
   so it does not shift the entries after it.
-- Errors pass through and do **not** reset the offset: one junk line in the
-  middle should not make every later entry jump a day.
+- Headers, notes and errors pass through and do **not** reset the offset.
 
-What this does **not** do is reorder anything. The guarantee it provides is
-that no entry ends before it starts, and that entries which are only
-_apparently_ out of order because of midnight are put on the right day.
-Genuinely out-of-order input is still caught downstream by `calculatePauses`.
+Rolling is **silent**. An earlier version warned when a time went backwards by
+more than twelve hours, on the theory that it was a typo. That was wrong for
+how the app is used: an ordinary pasted work week produced four red rows, and
+a Friday-to-Sunday page produced one for every weekend day. No threshold below
+twenty-four hours works, because the next work day can start at any time — and
+since rolling is capped at one day anyway, "cap at 24h" just means "always
+roll".
 
-The 12-hour limit is a heuristic, and it is the only place in the pipeline
-where a number was picked rather than derived. `23.00 - 23.30` followed by
-`00.30 - 01.00` rolls (a one-hour gap); `09.00 - 23.00` followed by
-`11.01 - 12.00` does not (12h01) and is reported as an ordering error.
+The cost is that an outright typo, `09.00 - 12.00` followed by `08.00 - 10.00`,
+now reads as the next day rather than a warning. The notes are the source of
+truth for where a work day ends, and they say so with a header.
 
 One deliberate trade-off remains: _within_ a single entry, an end before the
 start always means crossing midnight, so `12.00 - 11.00` reads as a 23-hour
@@ -118,21 +143,28 @@ into `hours`/`minutes` by `% 60`; partial minutes are truncated, not rounded.
 Walks the entries in order and inserts a `Pause` row between each consecutive
 pair, computed as `calculateTimeDiff(previous.to, current.from)`.
 
-- An entry that `normalizeSequence` declined to roll forward — it starts
-  before the previous one ended by more than the plausibility limit —
-  produces a `TimeOrderError` row instead of a negative pause.
-- An error row **resets** the running start, so no pause is computed across an
-  unparsable line.
+- A **day header ends the run**: the gap from knocking off to starting the next
+  work day is not a break, and counting it would make the pause total
+  meaningless on a page covering several days.
+- A gap that merely crosses midnight **is** a pause — that is a night shift,
+  not a new work day. This is the one place where the calendar day and the
+  work day deliberately disagree.
+- An error row also resets the running start; nothing can be said about a gap
+  measured against a line that could not be read.
+- A note does **not** break the run.
 - `isPause(row)` is `!(row instanceof TimeDifferenceError) && 'pause' in row`.
 
-## `aggregateTimeDifference` (`timeDiffResult/aggregateTimeDifference.ts`)
+## `groupByDay` and the aggregations (`timeDiffResult/`)
 
-Reduces `TimeDiffRow[]` into a single `TimeInfo`, skipping errors and reading
-`pause.hours/minutes` for pause rows. Minutes carry into hours once per step,
+`aggregateTimeDifference` sums entry rows; `aggregatePauses` sums pause rows.
+Both skip headers, notes and errors. Minutes carry into hours once per step,
 which is sufficient because both operands are below 60.
 
-`TimeDiffResult` calls it twice on pre-filtered lists — once for worked time
-(pauses excluded), once for pause time — so the two totals never mix.
+`groupByDay` splits the rows at every day header into `DayGroup`s, each with
+its own totals. Notes from a single day carry no header at all and yield
+exactly one unlabelled group, which the table renders without any day
+scaffolding — so the everyday case looks as it always did, and a subtotal only
+appears when there is more than one day to compare.
 
 ## Config persistence (`timeDiffResult/configStore.ts`)
 
@@ -154,5 +186,8 @@ Not bugs, but worth knowing — all covered by tests:
    the exception and reject the line outright.
 4. **Rows are keyed by array index.** Safe while the list is fully recomputed
    on every blur.
-5. **Two separate days entered as consecutive lines** exceed the 12-hour limit
-   and are reported as an ordering error. The app models one day of times.
+5. **Days without a header are one work day.** Several days pasted with no
+   header lines still total correctly, but the gaps between them are counted
+   as breaks, so the pause total inflates. A header fixes it.
+6. **A note sits where it was written**, which can place it before the pause
+   row that follows the entry above it.

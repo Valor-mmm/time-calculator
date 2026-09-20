@@ -67,12 +67,14 @@ under `components/features/<feature>/`. Features nest sub-folders
 pages/index.tsx
   └── <TimeDifference>                        holds TimeDiffRow[] in useState
         ├── <Textarea onBlur>                 uncontrolled; fires on blur only
-        │     └── parseTime(raw)              string  -> (ParsingResult | Error)[]
+        │     └── parseTime(raw)              string -> ParsedLine[] (entries, headers, notes, errors)
         │        └── normalizeSequence(...)    rolls days so nothing runs backwards
-        │           └── timeDifference(...)    adds { hours, minutes } per range
-        │                 └── calculatePauses(...) interleaves Pause rows
+        │           └── timeDifference(...)    adds { hours, minutes } per entry
+        │                 └── calculatePauses(...) interleaves Pause rows, stopping at day headers
         └── <TimeDiffResult result>
-              ├── aggregateTimeDifference()   twice: worked total, pause total
+              ├── groupByDay()                splits rows into work days with own totals
+              ├── aggregateTimeDifference()   worked total
+              ├── aggregatePauses()           pause total
               ├── <TimeDiffTable>             filters pauses per config
               │     ├── <TimeDiffRow>         a parsed range
               │     ├── <PauseRow>            a gap between two ranges
@@ -81,8 +83,9 @@ pages/index.tsx
 ```
 
 The pipeline is deliberately a chain of pure functions
-(`parseTime → normalizeSequence → timeDifference → calculatePauses →
-aggregateTimeDifference`), wired together by the exported `calculateRows()`,
+(`parseTime → normalizeSequence → timeDifference → calculatePauses`, then
+`groupByDay` and the aggregations for display), wired together by the exported
+`calculateRows()`,
 with React only holding the resulting array. Errors are values, not throws:
 unparsable lines become `TimeParsingError` instances that travel through the
 whole pipeline and are rendered as error rows.

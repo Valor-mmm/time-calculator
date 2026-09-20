@@ -46,20 +46,24 @@ change at hand:
 - What happens at exactly midnight, to a range that crosses it
   (`22.00 - 02.00`), and to a shift that stops before it and resumes after
   (`20.00 - 23.00` then `01.00 - 04.00`)?
-- What happens when entries are out of chronological order?
+- What happens to a page covering several days, with and without `Samstag:`
+  style headers?
+- Does a prose line stay a note rather than becoming an error?
 - What happens with an open-ended entry (`09.00` with no end time), and with
   one whose start is still in the future?
 - What happens to hour `0`, hour `23`, minute `0`, minute `59`, to
   out-of-range values like `24.00` or `12.60`, and to digit runs that are not
   times at all (`123.45`, `09.00 - 123.45`)?
 
-Two mechanisms share this job and neither covers it alone: `normalizeSequence`
-rolls the calendar day forward (so nothing ends before it starts, and a shift
-resuming after midnight lands on the right day, bounded by a 12-hour
-plausibility limit), while `calculatePauses` turns what is left — genuinely
-out-of-order input — into a `TimeOrderError`. If the change touches either,
-confirm both still hold. A negative number must never reach
-`aggregateTimeDifference`.
+`normalizeSequence` rolls the calendar day forward whenever an entry would
+otherwise run backwards, silently and without any plausibility limit. A
+negative number must never reach the aggregations. If the change touches it,
+confirm that still holds.
+
+Do **not** reintroduce a warning for a time that goes backwards. That was
+tried and removed: an ordinary pasted work week produced four red rows. The
+input is pasted notes covering several days, and a day header is the only
+thing that ends a work day.
 
 ## 4. Is the browser-only state still safe?
 

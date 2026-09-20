@@ -14,33 +14,38 @@ Live at **[time-calculator.vercel.app](https://time-calculator.vercel.app)**.
 
 ## Input format
 
-One entry per line. Hour and minute may be separated by `:`, `.` or `,`, and
-the dash between start and end is optional:
+Paste your notes as they are. One entry per line; hour and minute may be
+separated by `:`, `.` or `,`, and the dash is optional:
 
 ```
-09:00 - 12:30
-9.00-12.30
-9,00 12,30
+Freitag:
+08.00 - 16.30
+auf Mittwoch gebucht
+
+Samstag:
+09.00 - 11.00
 ```
 
+- A line ending in a **colon** starts a new work day (`Samstag:`). Each day
+  gets its own subtotal, and the gap between two days is not counted as a
+  break.
+- **Prose lines** are kept as notes, not reported as errors.
 - **Leaving out the end time** (`09.00`) means "still running" — the entry
   lasts until now. A start that has not happened yet is flagged instead.
-- **Crossing midnight** (`22.00 - 02.00`) is understood as a night shift and
-  counts as 4 hours, not minus 20. A shift that stops before midnight and
-  resumes after it (`20.00 - 23.00` then `01.00 - 04.00`) is understood too.
-- **An entry that starts implausibly far before the previous one ended** is
-  flagged as an error row rather than silently subtracting from the total.
-  The cut-off is a 12-hour gap, which is what separates a shift resuming after
-  midnight from a typo.
-- **Out-of-range times** (`24.00`, `12.60`) and digit runs that cannot be a
-  time (`123.45`) are rejected with an error row.
+- **Crossing midnight** (`22.00 - 02.00`) is a night shift and counts as 4
+  hours. So is a shift that stops before midnight and resumes after it
+  (`20.00 - 23.00` then `01.00 - 04.00`) — the gap in between stays a break,
+  because that is one work day, not two.
+- A time that goes **backwards** is read as the clock having passed midnight,
+  not as a mistake. Use a day header to say where a work day actually ends.
+- **Out-of-range times** (`24.00`, `12.60`), digit runs that cannot be a time
+  (`123.45`), and lines holding something time-shaped that was not understood
+  (`1x.00 - 12.00`, or two ranges on one line) are reported as error rows
+  rather than silently changing the total.
 - Text around the times is ignored, so `Mo 09.00 - 12.30 lunch` works.
 
-The app models a single day of times. Two separate days entered as consecutive
-lines will exceed the 12-hour gap and be reported as an ordering error.
-
-The "Show Pauses" toggle adds a row for each gap between entries plus a
-separate pause total. The choice is remembered in `localStorage`.
+The "Show Pauses" toggle adds a row for each gap within a day plus a separate
+pause total. The choice is remembered in `localStorage`.
 
 ## Development
 

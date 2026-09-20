@@ -16,6 +16,7 @@ Deeper documentation lives in [`docs/`](./docs/README.md):
 - [`docs/testing.md`](./docs/testing.md) — the three test layers and conventions
 - [`docs/tooling-and-ci.md`](./docs/tooling-and-ci.md) — scripts, CI, guardrails, Sentry
 - [`docs/state-of-the-repo.md`](./docs/state-of-the-repo.md) — open PRs and open items
+- [`docs/planned-correction-mode.md`](./docs/planned-correction-mode.md) — a requested feature, not built
 
 Keep these updated when you change what they describe.
 
@@ -75,17 +76,20 @@ timeDifference → calculatePauses → aggregateTimeDifference` are plain
 ## Things to know before changing code
 
 - **Negative durations are the bug class this project has actually shipped.**
-  `normalizeSequence` rolls the calendar day forward so no entry ends before
-  it starts, and so a shift resuming after midnight lands on the right day —
-  but it does **not** reorder anything. Genuinely out-of-order input is caught
-  downstream, where `calculatePauses` turns it into a `TimeOrderError`. Both
-  halves are load-bearing; do not drop one assuming the other covers it. If
-  you touch either, re-check midnight, a split night shift, out-of-order
-  input, open-ended entries and the `0`/`23`/`59` boundaries. No negative
-  number may reach `aggregateTimeDifference`.
-- A reversed entry such as `12.00 - 11.00` reads as a 23-hour night shift, and
-  the roll-forward between entries is bounded by a 12-hour plausibility limit.
-  Both are deliberate trade-offs, not oversights — see `docs/domain-logic.md`.
+  `normalizeSequence` rolls the calendar day forward whenever an entry would
+  otherwise run backwards, so no negative number can reach the aggregations.
+  It does this **silently** — see the trade-off below. If you touch it,
+  re-check midnight, a split night shift, a pasted multi-day page, open-ended
+  entries and the `0`/`23`/`59` boundaries.
+- **The input is pasted notes, not a time format.** One notes page per day,
+  except Friday/Saturday/Sunday which share a page with `Samstag:` style
+  headers, plus the occasional prose line. Multi-day input is the normal case.
+  A day header is the only thing that ends a work day; a time going backwards
+  is read as the clock passing midnight, never as a mistake. Warning about it
+  was noise on ordinary input and was removed deliberately — do not add it
+  back without re-reading `docs/domain-logic.md`.
+- A reversed entry such as `12.00 - 11.00` reads as a 23-hour night shift.
+  That is a deliberate trade-off, not an oversight.
 - An open-ended entry carries `isOpenEnded`, because its `to` is the wall
   clock and must never be shifted by a day offset. Dropping that flag makes
   `20.00` entered at 15:30 read as 19h30m.
