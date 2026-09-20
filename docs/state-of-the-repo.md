@@ -49,6 +49,18 @@ See [testing.md](./testing.md).
    to React, so `setLanguage('en-EN')` returned early and nothing happened. The
    store's `getSnapshot` is now the single source of truth.
 
+**A second round after an independent review.** A fresh agent reviewed the
+branch cold and found that three of the four claimed fixes were narrower than
+their commit messages said: a split night shift was still rejected as an
+ordering error, an open-ended entry starting in the future inflated to nearly
+a full day, and the new bounds check was bypassed by regex backtracking. It
+also found that the end-to-end language spec passed against the buggy code
+(Chromium reports `en-GB`, matching neither language), that the Stop hook went
+inert as soon as an agent committed, and that four documents asserted an
+invariant `normalizeSequence` does not provide. All fixed, each with a
+regression test; the locale is now pinned and the hook compares against the
+merge base.
+
 **TypeScript** — `strict: true`, `target: ES2022`, `moduleResolution: bundler`.
 The codebase type-checks clean; `pauses.ts`, which depended on the loose
 settings, was rewritten.
@@ -80,8 +92,14 @@ named `time-calculator` rather than `with-tailwindcss`.
   `eslint.config.mjs`.
 - **Coverage is reported but not enforced.** No threshold is set.
 - A reversed entry such as `12.00 - 11.00` reads as a 23-hour night shift
-  rather than an error — a deliberate trade-off, documented in
+  rather than an error, and the roll-forward between entries is bounded by a
+  12-hour heuristic — deliberate trade-offs, documented in
   [domain-logic.md](./domain-logic.md).
+- The PostToolUse hook type-checks the whole project rather than the edited
+  file, so mid-refactor it reports errors in files the agent has not reached
+  yet, and a file outside the tsconfig `include` goes unchecked.
+- `noUncheckedIndexedAccess` is off — it is not part of `strict`, so indexed
+  access is still typed as if always present.
 
 ## What was already healthy
 

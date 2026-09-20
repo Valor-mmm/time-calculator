@@ -21,7 +21,9 @@ tests with no mocking beyond a frozen clock.
   second/millisecond zeroing, and the bounds validation that rejects `24.00`
   and `12.60` instead of letting dayjs roll them over.
 - `normalizeSequence.test.ts` — midnight crossing, the day offset carrying to
-  later entries, multiple crossings, and errors passing through.
+  later entries, multiple crossings, a shift resuming after midnight, both
+  sides of the 12-hour plausibility limit, open-ended entries including one
+  whose start is still in the future, and errors passing through.
 - `timeDifference.test.ts` — the hour/minute split, second truncation, and
   errors passing through.
 - `pauses.test.ts` — gap insertion, zero-length gaps, `TimeOrderError` for
@@ -71,6 +73,17 @@ These pin down bugs that were actually in the code:
 4. **The language switch ignoring the first click** when the browser language
    was German: the store compared against its own stale default rather than the
    value it had handed to React. Found by the test suite while writing it.
+   Playwright pins `locale: 'de-DE'` so the end-to-end spec exercises exactly
+   this case; without the pin Chromium reports `en-GB`, which matches neither
+   language and made the spec pass against the buggy code.
+5. **A split night shift rejected as an ordering error** — `20.00 - 23.00`
+   followed by `01.00 - 04.00` produced a red error row and lost the pause.
+6. **An open-ended entry starting in the future inflating to nearly a day** —
+   `20.00` entered at 15:30 read as 19h30m, and consumed a day offset that
+   shifted every later entry.
+7. **The bounds check bypassed by backtracking** — `123.45` matched as
+   `23.45`, and `09.00 - 123.45` parsed as an open entry with the end time
+   silently discarded.
 
 ## Conventions
 

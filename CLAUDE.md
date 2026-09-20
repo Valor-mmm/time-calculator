@@ -36,8 +36,9 @@ npm run verify   # lint + test + build
 npm run build    # production build
 ```
 
-**Run `npm run lint` and `npm run test` before finishing any change.** These
-are exactly what CI and the Husky pre-commit hook run. A Stop hook enforces it
+**Run `npm run lint` and `npm run test` before finishing any change.** CI runs
+both; the Husky pre-commit hook runs `npm run lint` only, so the tests are on
+you. A Stop hook enforces it
 when the working tree is dirty, and a PostToolUse hook formats and type-checks
 each file as you write it — but do not rely on the hooks to think for you.
 
@@ -74,13 +75,20 @@ timeDifference → calculatePauses → aggregateTimeDifference` are plain
 ## Things to know before changing code
 
 - **Negative durations are the bug class this project has actually shipped.**
-  `normalizeSequence` guarantees the entry sequence is chronological and
-  `calculatePauses` turns a backwards entry into a `TimeOrderError`. If you
-  touch either, re-check midnight, out-of-order input, open-ended entries and
-  the `0`/`23`/`59` boundaries. No negative number may reach
-  `aggregateTimeDifference`.
-- A reversed entry such as `12.00 - 11.00` reads as a 23-hour night shift. That
-  is a deliberate trade-off, not an oversight — see `docs/domain-logic.md`.
+  `normalizeSequence` rolls the calendar day forward so no entry ends before
+  it starts, and so a shift resuming after midnight lands on the right day —
+  but it does **not** reorder anything. Genuinely out-of-order input is caught
+  downstream, where `calculatePauses` turns it into a `TimeOrderError`. Both
+  halves are load-bearing; do not drop one assuming the other covers it. If
+  you touch either, re-check midnight, a split night shift, out-of-order
+  input, open-ended entries and the `0`/`23`/`59` boundaries. No negative
+  number may reach `aggregateTimeDifference`.
+- A reversed entry such as `12.00 - 11.00` reads as a 23-hour night shift, and
+  the roll-forward between entries is bounded by a 12-hour plausibility limit.
+  Both are deliberate trade-offs, not oversights — see `docs/domain-logic.md`.
+- An open-ended entry carries `isOpenEnded`, because its `to` is the wall
+  clock and must never be shifted by a day offset. Dropping that flag makes
+  `20.00` entered at 15:30 read as 19h30m.
 - `useLanguageSwitch` is a hand-rolled `useSyncExternalStore`. Its
   `getSnapshot` is the single source of truth; a second place deciding the
   current language reintroduces a real bug where the first click on the switch

@@ -21,8 +21,9 @@ import, no `window` access and no side effects.
 - New logic belongs in this chain, not in a component or a hook.
 - A stage that suddenly needs `useState`, `localStorage` or `Date.now()` in the
   middle of a calculation is a design smell — pass the value in instead.
-- `parseTime` is the only place allowed to read the current time, and it does
-  so once per call.
+- `parseTime` is the only place allowed to read the current time. It does so
+  once per line, so two lines in one input can differ by a minute if the call
+  straddles a minute boundary.
 
 ## 2. Are errors still values?
 
@@ -42,17 +43,23 @@ subclass that travels in the result array and gets rendered as a row.
 This is the bug class this project has actually shipped. Re-derive it for the
 change at hand:
 
-- What happens at exactly midnight, and to a range that crosses it
-  (`22.00 - 02.00`)?
+- What happens at exactly midnight, to a range that crosses it
+  (`22.00 - 02.00`), and to a shift that stops before it and resumes after
+  (`20.00 - 23.00` then `01.00 - 04.00`)?
 - What happens when entries are out of chronological order?
-- What happens with an open-ended entry (`09.00` with no end time)?
-- What happens to hour `0`, hour `23`, minute `0`, minute `59`, and to
-  out-of-range values like `24.00` or `12.60`?
+- What happens with an open-ended entry (`09.00` with no end time), and with
+  one whose start is still in the future?
+- What happens to hour `0`, hour `23`, minute `0`, minute `59`, to
+  out-of-range values like `24.00` or `12.60`, and to digit runs that are not
+  times at all (`123.45`, `09.00 - 123.45`)?
 
-`normalizeSequence` guarantees the sequence is chronological and
-`calculatePauses` turns a backwards entry into a `TimeOrderError`. If the
-change touches either, confirm both guarantees still hold — a negative number
-must never reach `aggregateTimeDifference`.
+Two mechanisms share this job and neither covers it alone: `normalizeSequence`
+rolls the calendar day forward (so nothing ends before it starts, and a shift
+resuming after midnight lands on the right day, bounded by a 12-hour
+plausibility limit), while `calculatePauses` turns what is left — genuinely
+out-of-order input — into a `TimeOrderError`. If the change touches either,
+confirm both still hold. A negative number must never reach
+`aggregateTimeDifference`.
 
 ## 4. Is the browser-only state still safe?
 

@@ -68,7 +68,7 @@ pages/index.tsx
   └── <TimeDifference>                        holds TimeDiffRow[] in useState
         ├── <Textarea onBlur>                 uncontrolled; fires on blur only
         │     └── parseTime(raw)              string  -> (ParsingResult | Error)[]
-        │        └── normalizeSequence(...)    rolls days so the sequence is chronological
+        │        └── normalizeSequence(...)    rolls days so nothing runs backwards
         │           └── timeDifference(...)    adds { hours, minutes } per range
         │                 └── calculatePauses(...) interleaves Pause rows
         └── <TimeDiffResult result>

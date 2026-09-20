@@ -36,7 +36,9 @@ done by `instanceof TimeDifferenceError` first, then `isPause()`.
 - `TimeParsingError` — carries `parsedString`, the offending input line, so the
   UI can echo it back.
 - `TimeOrderError` — carries `previousEnd` and `currentStart`, raised when an
-  entry starts before the previous one ended.
+  entry starts implausibly far before the previous one ended.
+- `FutureStartError` — carries `start`, raised for an open-ended entry whose
+  start has not happened yet.
 
 Errors are never thrown. They are returned as values and flow through the whole
 pipeline, which is why every stage has an `instanceof` guard. Adding a failure
@@ -54,9 +56,16 @@ Splits on `\n`, drops blank lines, and matches each line against:
 - Separator between hour and minute: `:`, `.` or `,` — so `9:00`, `9.00` and
   `9,00` all parse. The dash is optional.
 - The end time is **optional**. Given only a start time, `to` defaults to
-  **now**, so an open-ended "started at 09.00" line shows the elapsed time.
+  **now** and the entry is flagged `isOpenEnded`, so an open-ended
+  "started at 09.00" line shows the elapsed time. The flag is what lets
+  `normalizeSequence` tell that sentinel apart from a real end time.
 - Both times are **bounds-checked**: hour `0–23`, minute `0–59`. Anything else
   becomes a `TimeParsingError` rather than being silently rolled over by dayjs.
+- The pattern uses digit lookarounds, and a line containing a run of three or
+  more digits next to a separator is rejected outright. Without both, the
+  engine backtracks past a leading digit: `123.45` would match as `23.45`, and
+  `09.00 - 123.45` would parse as an open entry with the end time silently
+  discarded.
 - `from` and `to` are built from **today's date** with seconds and milliseconds
   zeroed. Only the time of day matters; the app has no concept of dates beyond
   what `normalizeSequence` derives.
@@ -66,22 +75,37 @@ Non-matching lines yield a `TimeParsingError` holding the raw line.
 ## `normalizeSequence(entries): ParsingResultOrError[]`
 
 Because every entry is parsed onto today's date, `22.00 - 02.00` would end
-before it starts. This stage walks the entries in order and keeps a day offset:
+before it starts, and a shift that stops before midnight and resumes after it
+would look like it ran backwards. This stage walks the entries in order,
+keeping a running day offset and the previous entry's end:
 
 - The offset is added to both ends of every entry.
-- If an entry still ends before it starts, its end moves one day forward (a
-  night shift) and the offset increments for everything that follows.
-- Errors pass through and do **not** reset the offset.
+- If an entry starts before the previous one ended, its day rolls forward —
+  but only while the gap that implies stays within `MAX_IMPLIED_PAUSE_HOURS`
+  (12). Beyond that it is far more likely a typo than a shift resuming after
+  midnight, so the entry is left alone and `calculatePauses` reports it.
+- If an entry still ends before it starts, its end moves one day forward (it
+  crosses midnight) and the offset increments for everything that follows.
+- An **open-ended** entry ends at the wall clock, which cannot be rolled. If
+  the sequence has already moved past that instant, the entry cannot be
+  running and becomes a `FutureStartError` — without consuming a day offset,
+  so it does not shift the entries after it.
+- Errors pass through and do **not** reset the offset: one junk line in the
+  middle should not make every later entry jump a day.
 
-The result is a chronological sequence, which is what makes negative durations
-structurally impossible. `22.00 - 02.00` followed by `03.00 - 05.00` becomes
-`day 0 22:00 → day 1 02:00` then `day 1 03:00 → day 1 05:00`, so the pause
-between them is a clean hour.
+What this does **not** do is reorder anything. The guarantee it provides is
+that no entry ends before it starts, and that entries which are only
+_apparently_ out of order because of midnight are put on the right day.
+Genuinely out-of-order input is still caught downstream by `calculatePauses`.
 
-The deliberate trade-off: a typo like `12.00 - 11.00` reads as a 23-hour night
-shift rather than an error. Within one entry, end-before-start is treated as
-crossing midnight; only _between_ entries is going backwards treated as a
-mistake.
+The 12-hour limit is a heuristic, and it is the only place in the pipeline
+where a number was picked rather than derived. `23.00 - 23.30` followed by
+`00.30 - 01.00` rolls (a one-hour gap); `09.00 - 23.00` followed by
+`11.01 - 12.00` does not (12h01) and is reported as an ordering error.
+
+One deliberate trade-off remains: _within_ a single entry, an end before the
+start always means crossing midnight, so `12.00 - 11.00` reads as a 23-hour
+night shift rather than an error.
 
 ## `timeDifference` / `calculateTimeDiff` (`timeDifference.ts`)
 
@@ -94,8 +118,9 @@ into `hours`/`minutes` by `% 60`; partial minutes are truncated, not rounded.
 Walks the entries in order and inserts a `Pause` row between each consecutive
 pair, computed as `calculateTimeDiff(previous.to, current.from)`.
 
-- An entry starting before the previous one ended produces a `TimeOrderError`
-  row instead of a negative pause.
+- An entry that `normalizeSequence` declined to roll forward — it starts
+  before the previous one ended by more than the plausibility limit —
+  produces a `TimeOrderError` row instead of a negative pause.
 - An error row **resets** the running start, so no pause is computed across an
   unparsable line.
 - `isPause(row)` is `!(row instanceof TimeDifferenceError) && 'pause' in row`.
@@ -124,7 +149,10 @@ Not bugs, but worth knowing — all covered by tests:
    See the trade-off in `normalizeSequence` above.
 2. **Open-ended entries are frozen at blur time.** `to = now` is captured once;
    the row does not tick forward afterwards.
-3. **Junk after a valid match is ignored.** The regex is unanchored, so
-   `09.00 - 12.30 lunch` parses fine.
+3. **Surrounding text is ignored.** The pattern is unanchored, so
+   `Mo 09.00 - 12.30 lunch` parses fine. Digit runs touching a separator are
+   the exception and reject the line outright.
 4. **Rows are keyed by array index.** Safe while the list is fully recomputed
    on every blur.
+5. **Two separate days entered as consecutive lines** exceed the 12-hour limit
+   and are reported as an ordering error. The app models one day of times.

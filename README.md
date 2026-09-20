@@ -24,12 +24,20 @@ the dash between start and end is optional:
 ```
 
 - **Leaving out the end time** (`09.00`) means "still running" — the entry
-  lasts until now.
+  lasts until now. A start that has not happened yet is flagged instead.
 - **Crossing midnight** (`22.00 - 02.00`) is understood as a night shift and
-  counts as 4 hours, not minus 20.
-- **An entry that starts before the previous one ended** is flagged as an error
-  row rather than silently subtracting from the total.
-- **Out-of-range times** (`24.00`, `12.60`) are rejected with an error row.
+  counts as 4 hours, not minus 20. A shift that stops before midnight and
+  resumes after it (`20.00 - 23.00` then `01.00 - 04.00`) is understood too.
+- **An entry that starts implausibly far before the previous one ended** is
+  flagged as an error row rather than silently subtracting from the total.
+  The cut-off is a 12-hour gap, which is what separates a shift resuming after
+  midnight from a typo.
+- **Out-of-range times** (`24.00`, `12.60`) and digit runs that cannot be a
+  time (`123.45`) are rejected with an error row.
+- Text around the times is ignored, so `Mo 09.00 - 12.30 lunch` works.
+
+The app models a single day of times. Two separate days entered as consecutive
+lines will exceed the 12-hour gap and be reported as an ordering error.
 
 The "Show Pauses" toggle adds a row for each gap between entries plus a
 separate pause total. The choice is remembered in `localStorage`.

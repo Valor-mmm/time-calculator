@@ -46,8 +46,9 @@ blocks the commit instead of being silently rewritten.
 
 ## GitHub Actions
 
-`dev.yml` triggers on `push` **and** `pull_request`, with a concurrency group
-that cancels superseded runs, and fans out to three reusable workflows:
+`dev.yml` triggers on `pull_request` and on `push` to `main`, with a
+concurrency group that cancels superseded runs, and fans out to three reusable
+workflows:
 
 - `_lint.yml` — `npm ci`, then `npm run lint`
 - `_test.yml` — `npm ci`, then `npm run test:coverage`, uploading `coverage/`
@@ -69,12 +70,16 @@ reaches `main` unchecked with only the Vercel preview standing behind it.
   every `Edit`/`Write`, the touched file is Prettier-formatted, then linted,
   and `tsc` runs across the project. On failure the hook exits `2`, which
   feeds the error text straight back to the agent — a type error surfaces
-  seconds after it is written rather than in CI.
+  seconds after it is written rather than in CI. Note the `tsc` run is
+  project-wide, so mid-refactor it will report errors in files the agent has
+  not reached yet, and a file outside the tsconfig `include` is not checked at
+  all.
 - **`settings.json` → Stop hook** (`hooks/verify-before-stop.sh`): when an
-  agent tries to finish with a dirty working tree, `npm run lint` and
-  `npm run test` must pass first, otherwise stopping is blocked. It skips
-  itself when the tree is clean and honours `stop_hook_active` so it cannot
-  loop.
+  agent tries to finish while the branch differs from its merge base with
+  `main`, `npm run lint` and `npm run test` must pass first, otherwise
+  stopping is blocked. Comparing against the base rather than the working tree
+  matters — an agent that has already committed still has to answer for its
+  work. It honours `stop_hook_active` so it cannot loop.
 - **`skills/time-calculator-review/SKILL.md`**: a project-specific review
   checklist covering what the machine checks cannot — pipeline purity,
   errors-as-values, the negative-duration bug class, browser-only state, the
