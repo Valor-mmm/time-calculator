@@ -2,10 +2,15 @@ import { TimeDifferenceError } from '../../errors'
 import { FC } from 'react'
 import { TimeParsingError } from '../../errors/TimeParsingError'
 import { TimeOrderError } from '../../errors/TimeOrderError'
+import { FutureStartError } from '../../errors/FutureStartError'
 
 const determineErrorMessage = (error: TimeDifferenceError): string => {
   if (error instanceof TimeParsingError) {
     return `Could not parse this input: "${error.parsedString}"`
+  }
+
+  if (error instanceof FutureStartError) {
+    return `${error.start} has not started yet`
   }
 
   if (error instanceof TimeOrderError) {

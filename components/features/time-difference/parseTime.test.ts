@@ -55,6 +55,13 @@ describe('parseTime', () => {
 
     expect(hhmm(entry.from)).toBe('09:00')
     expect(hhmm(entry.to)).toBe('15:30')
+    expect(entry.isOpenEnded).toBe(true)
+  })
+
+  it('does not mark a complete range as open-ended', () => {
+    const [entry] = asResults('09.00 - 12.30')
+
+    expect(entry.isOpenEnded).toBeUndefined()
   })
 
   it('zeroes out seconds and milliseconds', () => {
@@ -96,6 +103,26 @@ describe('parseTime', () => {
       const [error] = parseTime('09.00 - 24.00')
 
       expect(error).toBeInstanceOf(TimeParsingError)
+    })
+
+    it.each(['123.45', '109.00 - 112.30', '1234', '09.00 - 123.45'])(
+      'rejects %s rather than matching a two-digit substring of it',
+      (input) => {
+        const [error] = parseTime(input)
+
+        expect(error).toBeInstanceOf(TimeParsingError)
+      },
+    )
+
+    it.each([
+      ['09.00 - 12.30 lunch', '09:00', '12:30'],
+      ['Mo 09.00 - 12.30', '09:00', '12:30'],
+      ['09.00 - 12.30 room 101', '09:00', '12:30'],
+    ])('still tolerates surrounding text in %s', (input, from, to) => {
+      const [entry] = asResults(input)
+
+      expect(hhmm(entry.from)).toBe(from)
+      expect(hhmm(entry.to)).toBe(to)
     })
 
     it.each(['00.00 - 23.59', '23.59 - 00.00'])(

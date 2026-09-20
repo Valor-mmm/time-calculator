@@ -6,6 +6,7 @@ import { aggregateTimeDifference } from './timeDiffResult/aggregateTimeDifferenc
 import { isPause } from './pauses'
 import { TimeOrderError } from './errors/TimeOrderError'
 import { TimeParsingError } from './errors/TimeParsingError'
+import { FutureStartError } from './errors/FutureStartError'
 
 const NOW = new Date('2026-09-20T15:30:00')
 
@@ -75,6 +76,41 @@ describe('the full pipeline', () => {
 
       expect(rows[0]).toBeInstanceOf(TimeParsingError)
       expect(workedTotal('99.99')).toEqual({ hours: 0, minutes: 0 })
+    })
+
+    it('counts a shift that stops before midnight and resumes after it', () => {
+      expect(workedTotal('20.00 - 23.00\n01.00 - 04.00')).toEqual({
+        hours: 6,
+        minutes: 0,
+      })
+      expect(pauseTotal('20.00 - 23.00\n01.00 - 04.00')).toEqual({
+        hours: 2,
+        minutes: 0,
+      })
+    })
+
+    it('rejects an open entry that has not started yet', () => {
+      const rows = calculateRows('20.00')
+
+      expect(rows[0]).toBeInstanceOf(FutureStartError)
+      expect(workedTotal('20.00')).toEqual({ hours: 0, minutes: 0 })
+    })
+
+    it('does not let a future open entry inflate a later one', () => {
+      expect(workedTotal('20.00\n09.00 - 10.00')).toEqual({
+        hours: 1,
+        minutes: 0,
+      })
+    })
+
+    it('rejects a time whose digits cannot be a time of day', () => {
+      expect(calculateRows('123.45')[0]).toBeInstanceOf(TimeParsingError)
+      expect(calculateRows('109.00 - 112.30')[0]).toBeInstanceOf(
+        TimeParsingError,
+      )
+      expect(calculateRows('09.00 - 123.45')[0]).toBeInstanceOf(
+        TimeParsingError,
+      )
     })
 
     it('never produces a negative worked total for mixed input', () => {
