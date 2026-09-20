@@ -1,6 +1,7 @@
 import dayjs from 'dayjs'
 import { TimeDifferenceError } from './errors'
 import { TimeParsingError } from './errors/TimeParsingError'
+import { ParsedLine } from './types'
 
 /**
  * A time of day as `H.MM`, `H:MM` or `H,MM`, optionally followed by a second
@@ -22,6 +23,14 @@ const validationRegex =
  */
 const malformedTimeRegex = /\d{3,}[:.,]|[:.,]\d{3,}/
 
+/**
+ * Digits touching a separator anywhere the match did not reach mean the line
+ * held something time-shaped that was not understood — a typo such as
+ * `1x.00 - 12.00`, or a second range crammed onto one line. Dropping it
+ * silently would quietly change the total, so the line is rejected instead.
+ */
+const leftoverTimeRegex = /\d[:.,]|[:.,]\d/
+
 const MAX_HOUR = 23
 const MAX_MINUTE = 59
 
@@ -34,6 +43,8 @@ export interface ParsingResult {
 
 export type ParsingResultOrError = ParsingResult | TimeDifferenceError
 
+const containsDigit = /\d/
+
 const isValidTime = (hour: number, minute: number): boolean =>
   hour <= MAX_HOUR && minute <= MAX_MINUTE
 
@@ -44,24 +55,48 @@ const atTime = (base: dayjs.Dayjs, hour: number, minute: number): dayjs.Dayjs =>
     .set('second', 0)
     .set('millisecond', 0)
 
-export const parseTime = (timeInput: string): ParsingResultOrError[] =>
-  timeInput.split('\n').flatMap((timeDiff): ParsingResultOrError[] => {
-    if (timeDiff.trim() === '') {
+/**
+ * Turns one pasted line into a parsed line.
+ *
+ * The notes being pasted are not a time format, they are notes. A line ending
+ * in a colon (`Samstag:`) starts a new work day; prose without digits is kept
+ * as a note; only a line that looks like it was *meant* to be a time and is
+ * not becomes an error.
+ */
+export const parseTime = (timeInput: string): ParsedLine[] =>
+  timeInput.split('\n').flatMap((timeDiff): ParsedLine[] => {
+    const trimmed = timeDiff.trim()
+
+    if (trimmed === '') {
       return []
     }
 
-    const trimmed = timeDiff.trim()
-    const result = malformedTimeRegex.test(trimmed)
+    if (trimmed.endsWith(':')) {
+      return [{ label: trimmed.slice(0, -1).trim() || trimmed }]
+    }
+
+    const match = malformedTimeRegex.test(trimmed)
       ? null
       : trimmed.match(validationRegex)
 
+    const result =
+      match &&
+      !leftoverTimeRegex.test(
+        trimmed.slice(0, match.index) +
+          trimmed.slice((match.index ?? 0) + match[0].length),
+      )
+        ? match
+        : null
+
     if (!result) {
-      return [
-        new TimeParsingError(
-          'Could not parse provided time difference.',
-          timeDiff,
-        ),
-      ]
+      return containsDigit.test(trimmed)
+        ? [
+            new TimeParsingError(
+              'Could not parse provided time difference.',
+              timeDiff,
+            ),
+          ]
+        : [{ note: trimmed }]
     }
 
     const fromHour = parseInt(result[1], 10)

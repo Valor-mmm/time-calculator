@@ -3,6 +3,7 @@ import dayjs from 'dayjs'
 import { parseTime, ParsingResult } from './parseTime'
 import { TimeDifferenceError } from './errors'
 import { TimeParsingError } from './errors/TimeParsingError'
+import { DayHeader, isDayHeader, isNoteLine, NoteLine } from './types'
 
 const NOW = new Date('2026-09-20T15:30:00')
 
@@ -73,20 +74,60 @@ describe('parseTime', () => {
     expect(entry.to.millisecond()).toBe(0)
   })
 
-  it('reports an unparsable line as a TimeParsingError carrying the input', () => {
-    const [error] = parseTime('not a time')
+  it('reports a mistyped time as a TimeParsingError carrying the input', () => {
+    const [error] = parseTime('1x.00 - 12.00')
 
     expect(error).toBeInstanceOf(TimeParsingError)
-    expect((error as TimeParsingError).parsedString).toBe('not a time')
+    expect((error as TimeParsingError).parsedString).toBe('1x.00 - 12.00')
+  })
+
+  it('rejects a line holding a second range it cannot represent', () => {
+    const [error] = parseTime('09.00 - 12.30, 14.00 - 16.00')
+
+    expect(error).toBeInstanceOf(TimeParsingError)
   })
 
   it('keeps errors and valid entries in input order', () => {
-    const entries = parseTime('09.00 - 10.00\nnonsense\n11.00 - 12.00')
+    const entries = parseTime('09.00 - 10.00\n1x.00 - 12.00\n11.00 - 12.00')
 
     expect(entries).toHaveLength(3)
     expect(entries[1]).toBeInstanceOf(TimeParsingError)
     expect(entries[0]).not.toBeInstanceOf(TimeDifferenceError)
     expect(entries[2]).not.toBeInstanceOf(TimeDifferenceError)
+  })
+
+  describe('lines that are not times', () => {
+    it.each(['Samstag:', 'Sonntag:', 'Fr 12.09.:'])(
+      'reads %s as a day header',
+      (input) => {
+        const [line] = parseTime(input)
+
+        expect(isDayHeader(line)).toBe(true)
+      },
+    )
+
+    it('strips the trailing colon from the label', () => {
+      const [line] = parseTime('Samstag:')
+
+      expect((line as DayHeader).label).toBe('Samstag')
+    })
+
+    it('keeps prose without digits as a note rather than an error', () => {
+      const [line] = parseTime('auf einen anderen Tag gebucht')
+
+      expect(isNoteLine(line)).toBe(true)
+      expect((line as NoteLine).note).toBe('auf einen anderen Tag gebucht')
+    })
+
+    it('keeps notes and times in input order', () => {
+      const lines = parseTime(
+        '09.00 - 12.00\nauf Mittwoch gebucht\nSamstag:\n13.00 - 17.00',
+      )
+
+      expect(lines).toHaveLength(4)
+      expect(isNoteLine(lines[1])).toBe(true)
+      expect(isDayHeader(lines[2])).toBe(true)
+    })
   })
 
   describe('bounds validation', () => {
