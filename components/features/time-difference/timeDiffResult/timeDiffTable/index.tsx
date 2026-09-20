@@ -3,47 +3,72 @@ import { TimeDifferenceError } from '../../errors'
 import { TimeDiffErrorRow } from './timeDiffErrorRow'
 import { isPause } from '../../pauses'
 import { PauseRow } from './pauseRow'
-import type {
-  TimeDiffConfig,
-  TimeDiffRow as TimeDiffRowType,
-  TimeInfo,
+import {
+  isNoteLine,
+  type DayGroupRow,
+  type DayGroup,
+  type TimeDiffConfig,
+  type TimeInfo,
 } from '../../types'
 import { TimeDiffRow } from './timeDiffRow'
+import { NoteRow } from './noteRow'
+import { DayHeaderRow } from './dayHeaderRow'
+import { DaySubtotalRow } from './daySubtotalRow'
 
 interface TimeDiffTableProps {
   totalTime: TimeInfo
   totalPauseTime: TimeInfo
-  timeDifferences: TimeDiffRowType[]
+  days: DayGroup[]
   config: TimeDiffConfig
 }
 
 export const TimeDiffTable: FC<TimeDiffTableProps> = ({
   totalTime,
   totalPauseTime,
-  timeDifferences,
+  days,
   config,
 }) => {
-  const rows = useMemo(
+  const visibleDays = useMemo(
     () =>
-      timeDifferences.filter((row) => {
-        return config.showPauses || !isPause(row)
-      }),
-    [config, timeDifferences],
+      days.map((day) => ({
+        ...day,
+        rows: day.rows.filter(
+          (row: DayGroupRow) => config.showPauses || !isPause(row),
+        ),
+      })),
+    [config, days],
   )
+
+  // A single unlabelled day is the everyday case: no day scaffolding, no
+  // subtotal that would only repeat the total below it.
+  const showDayBreakdown = visibleDays.length > 1
 
   return (
     <table className="border-collapse">
-      <tbody>
-        {rows.map((difference, index) => {
-          if (difference instanceof TimeDifferenceError) {
-            return <TimeDiffErrorRow key={index} error={difference} />
-          } else if (isPause(difference)) {
-            return <PauseRow key={index} pause={difference} />
-          }
+      {visibleDays.map((day, dayIndex) => (
+        <tbody key={dayIndex}>
+          {day.label ? (
+            <DayHeaderRow
+              header={{ label: day.label }}
+              isFirst={dayIndex === 0}
+            />
+          ) : null}
+          {day.rows.map((row, index) => {
+            if (row instanceof TimeDifferenceError) {
+              return <TimeDiffErrorRow key={index} error={row} />
+            }
+            if (isNoteLine(row)) {
+              return <NoteRow key={index} line={row} />
+            }
+            if (isPause(row)) {
+              return <PauseRow key={index} pause={row} />
+            }
 
-          return <TimeDiffRow key={index} {...difference} />
-        })}
-      </tbody>
+            return <TimeDiffRow key={index} {...row} />
+          })}
+          {showDayBreakdown ? <DaySubtotalRow total={day.total} /> : null}
+        </tbody>
+      ))}
       <tfoot>
         <tr>
           <td className="p-1" colSpan={3}>
@@ -52,12 +77,12 @@ export const TimeDiffTable: FC<TimeDiffTableProps> = ({
         </tr>
         <tr>
           <th colSpan={2} />
-          <th className="p-1 text-right">{`${totalTime.hours} Hours ${totalTime.minutes} Minutes`}</th>
+          <th className="p-1 text-right whitespace-nowrap">{`${totalTime.hours} Hours ${totalTime.minutes} Minutes`}</th>
         </tr>
         {config.showPauses ? (
           <tr>
             <th colSpan={2} />
-            <th className="p-1 text-right font-extralight">{`{ ${totalPauseTime.hours} Hours ${totalPauseTime.minutes} Minutes }`}</th>
+            <th className="p-1 text-right font-extralight whitespace-nowrap">{`{ ${totalPauseTime.hours} Hours ${totalPauseTime.minutes} Minutes }`}</th>
           </tr>
         ) : null}
       </tfoot>

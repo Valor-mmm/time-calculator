@@ -2,19 +2,21 @@ import { describe, expect, it, afterEach, beforeEach, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { calculateRows, TimeDifference } from './index'
-import { aggregateTimeDifference } from './timeDiffResult/aggregateTimeDifference'
-import { isPause } from './pauses'
-import { TimeOrderError } from './errors/TimeOrderError'
+import {
+  aggregatePauses,
+  aggregateTimeDifference,
+} from './timeDiffResult/aggregateTimeDifference'
+import { groupByDay } from './timeDiffResult/groupByDay'
+import { TimeDifferenceError } from './errors'
 import { TimeParsingError } from './errors/TimeParsingError'
 import { FutureStartError } from './errors/FutureStartError'
 
 const NOW = new Date('2026-09-20T15:30:00')
 
 const workedTotal = (input: string) =>
-  aggregateTimeDifference(calculateRows(input).filter((row) => !isPause(row)))
+  aggregateTimeDifference(calculateRows(input))
 
-const pauseTotal = (input: string) =>
-  aggregateTimeDifference(calculateRows(input).filter(isPause))
+const pauseTotal = (input: string) => aggregatePauses(calculateRows(input))
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true })
@@ -61,12 +63,9 @@ describe('the full pipeline', () => {
       })
     })
 
-    it('flags out-of-order entries instead of subtracting from the total', () => {
-      const rows = calculateRows('09.00 - 12.00\n08.00 - 10.00')
-
-      expect(rows.some((row) => row instanceof TimeOrderError)).toBe(true)
-      expect(pauseTotal('09.00 - 12.00\n08.00 - 10.00')).toEqual({
-        hours: 0,
+    it('treats a backwards time as the clock passing midnight', () => {
+      expect(workedTotal('09.00 - 12.00\n08.00 - 10.00')).toEqual({
+        hours: 5,
         minutes: 0,
       })
     })
@@ -121,6 +120,85 @@ describe('the full pipeline', () => {
       expect(total.hours).toBeGreaterThanOrEqual(0)
       expect(total.minutes).toBeGreaterThanOrEqual(0)
     })
+  })
+})
+
+describe('a pasted notes page', () => {
+  it('sums a normal weekday with a still-running entry', () => {
+    const input = '08.00 - 12.00\n12.30 - 15.00\n15.15'
+
+    expect(workedTotal(input)).toEqual({ hours: 6, minutes: 45 })
+    expect(pauseTotal(input)).toEqual({ hours: 0, minutes: 45 })
+  })
+
+  it('splits a Friday-to-Sunday page into a day per header', () => {
+    const days = groupByDay(
+      calculateRows(
+        '08.00 - 16.30\nSamstag:\n09.00 - 11.00\nSonntag:\n10.00 - 12.00',
+      ),
+    )
+
+    expect(days).toHaveLength(3)
+    expect(days.map((day) => day.label)).toEqual([
+      undefined,
+      'Samstag',
+      'Sonntag',
+    ])
+    expect(days.map((day) => day.total)).toEqual([
+      { hours: 8, minutes: 30 },
+      { hours: 2, minutes: 0 },
+      { hours: 2, minutes: 0 },
+    ])
+  })
+
+  it('totals the whole page across its days', () => {
+    const input =
+      '08.00 - 16.30\nSamstag:\n09.00 - 11.00\nSonntag:\n10.00 - 12.00'
+
+    expect(workedTotal(input)).toEqual({ hours: 12, minutes: 30 })
+  })
+
+  it('does not count the gap between two work days as a pause', () => {
+    const input = '08.00 - 16.30\nSamstag:\n09.00 - 11.00'
+
+    expect(pauseTotal(input)).toEqual({ hours: 0, minutes: 0 })
+  })
+
+  it('does count a gap that merely crosses midnight', () => {
+    // A night shift taking a break at midnight is one work day, not two.
+    const input = '20.00 - 23.00\n01.00 - 04.00'
+
+    expect(workedTotal(input)).toEqual({ hours: 6, minutes: 0 })
+    expect(pauseTotal(input)).toEqual({ hours: 2, minutes: 0 })
+  })
+
+  it('keeps a prose note without turning it into an error', () => {
+    const rows = calculateRows(
+      '08.00 - 12.00\nauf Mittwoch gebucht\n13.00 - 17.00',
+    )
+
+    expect(rows.some((row) => row instanceof TimeParsingError)).toBe(false)
+    expect(
+      workedTotal('08.00 - 12.00\nauf Mittwoch gebucht\n13.00 - 17.00'),
+    ).toEqual({ hours: 8, minutes: 0 })
+  })
+
+  it('produces one unlabelled day for an ordinary single-day page', () => {
+    const days = groupByDay(calculateRows('09.00 - 12.30\n13.00 - 17.00'))
+
+    expect(days).toHaveLength(1)
+    expect(days[0].label).toBeUndefined()
+  })
+
+  it('reports no errors at all for a plain pasted week', () => {
+    const rows = calculateRows(
+      '08.00 - 16.30\n08.00 - 16.30\n08.00 - 16.30\n08.00 - 13.00',
+    )
+
+    expect(rows.some((row) => row instanceof TimeDifferenceError)).toBe(false)
+    expect(
+      workedTotal('08.00 - 16.30\n08.00 - 16.30\n08.00 - 16.30\n08.00 - 13.00'),
+    ).toEqual({ hours: 30, minutes: 30 })
   })
 })
 
