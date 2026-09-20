@@ -1,29 +1,64 @@
-# Next.js + Tailwind CSS Example
+# Time Calculator
 
-This example shows how to use [Tailwind CSS](https://tailwindcss.com/) [(v2.2)](https://blog.tailwindcss.com/tailwindcss-2-2) with Next.js. It follows the steps outlined in the official [Tailwind docs](https://tailwindcss.com/docs/guides/nextjs).
+A small, entirely client-side web app for adding up worked hours. Paste lines
+of time ranges, get per-entry durations, the gaps between them and a total.
 
-It uses the new [`Just-in-Time Mode`](https://tailwindcss.com/docs/just-in-time-mode) for Tailwind CSS.
+Live at **[time-calculator.vercel.app](https://time-calculator.vercel.app)**.
 
-## Preview
-
-Preview the example live on [StackBlitz](http://stackblitz.com/):
-
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/vercel/next.js/tree/canary/examples/with-tailwindcss)
-
-## Deploy your own
-
-Deploy the example using [Vercel](https://vercel.com?utm_source=github&utm_medium=readme&utm_campaign=next-example):
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/git/external?repository-url=https://github.com/vercel/next.js/tree/canary/examples/with-tailwindcss&project-name=with-tailwindcss&repository-name=with-tailwindcss)
-
-## How to use
-
-Execute [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) with [npm](https://docs.npmjs.com/cli/init) or [Yarn](https://yarnpkg.com/lang/en/docs/cli/create/) to bootstrap the example:
-
-```bash
-npx create-next-app --example with-tailwindcss with-tailwindcss-app
-# or
-yarn create next-app --example with-tailwindcss with-tailwindcss-app
+```
+09.00 - 12.30      09.00 - 12.30 : 3h 30m
+13.00 - 17.00  ->  13.00 - 17.00 : 4h 0m
+                   ───────────────────────
+                      7 Hours 30 Minutes
 ```
 
-Deploy it to the cloud with [Vercel](https://vercel.com/new?utm_source=github&utm_medium=readme&utm_campaign=next-example) ([Documentation](https://nextjs.org/docs/deployment)).
+## Input format
+
+One entry per line. Hour and minute may be separated by `:`, `.` or `,`, and
+the dash between start and end is optional:
+
+```
+09:00 - 12:30
+9.00-12.30
+9,00 12,30
+```
+
+- **Leaving out the end time** (`09.00`) means "still running" — the entry
+  lasts until now.
+- **Crossing midnight** (`22.00 - 02.00`) is understood as a night shift and
+  counts as 4 hours, not minus 20.
+- **An entry that starts before the previous one ended** is flagged as an error
+  row rather than silently subtracting from the total.
+- **Out-of-range times** (`24.00`, `12.60`) are rejected with an error row.
+
+The "Show Pauses" toggle adds a row for each gap between entries plus a
+separate pause total. The choice is remembered in `localStorage`.
+
+## Development
+
+```bash
+npm install
+npm run dev          # http://localhost:3000
+```
+
+| Command                 | What it does                                               |
+| ----------------------- | ---------------------------------------------------------- |
+| `npm run dev`           | Development server                                         |
+| `npm run build`         | Production build                                           |
+| `npm run lint`          | Prettier check, ESLint and `tsc` — the CI gate             |
+| `npm run fix`           | Apply Prettier and ESLint fixes                            |
+| `npm run test`          | Unit and component tests (Vitest)                          |
+| `npm run test:watch`    | Vitest in watch mode                                       |
+| `npm run test:coverage` | Tests with a coverage report                               |
+| `npm run test:e2e`      | End-to-end tests (Playwright, needs `npm run build` first) |
+| `npm run verify`        | Lint, test and build in one go                             |
+
+## Stack
+
+Next.js (Pages Router) · React · TypeScript · Tailwind CSS · dayjs · Sentry ·
+deployed on Vercel.
+
+## Documentation
+
+- [`CLAUDE.md`](./CLAUDE.md) — working agreements, also for AI agents
+- [`docs/`](./docs/README.md) — architecture, domain logic, testing, tooling and CI
